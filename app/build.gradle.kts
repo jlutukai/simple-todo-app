@@ -54,6 +54,12 @@ android {
         }
     }
 
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
+
 }
 
 dependencies {
@@ -83,6 +89,17 @@ dependencies {
     // MockK - mocking for Repository unit tests
     testImplementation(libs.mockk)
     androidTestImplementation(libs.mockk.android)
+
+    // Robolectric for JVM-based UI testing
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.fragment.testing)
+    debugImplementation(libs.androidx.fragment.testing.manifest)
+    testImplementation(libs.androidx.espresso.core)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.test.runner)
+    testImplementation(libs.androidx.junit)
+    testImplementation(libs.hilt.android.testing)
+    kspTest(libs.hilt.android.compiler)
 
     // Room
     implementation(libs.androidx.room.runtime)

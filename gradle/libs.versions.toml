@@ -19,6 +19,10 @@ androidDesugarJdkLibs = "2.1.5"
 truth = "1.4.4"
 mockk = "1.13.13"
 coreTesting = "2.2.0"
+robolectric = "4.14.1"
+fragmentTesting = "1.8.5"
+testCore = "1.6.1"
+testRunner = "1.6.2"
 
 [libraries]
 android-desugarJdkLibs = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "androidDesugarJdkLibs" }
@@ -45,6 +49,11 @@ androidx-core-testing = { group = "androidx.arch.core", name = "core-testing", v
 truth = { module = "com.google.truth:truth", version.ref = "truth" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 mockk-android = { module = "io.mockk:mockk-android", version.ref = "mockk" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+androidx-fragment-testing = { module = "androidx.fragment:fragment-testing", version.ref = "fragmentTesting" }
+androidx-fragment-testing-manifest = { module = "androidx.fragment:fragment-testing-manifest", version.ref = "fragmentTesting" }
+androidx-test-core = { group = "androidx.test", name = "core", version.ref = "testCore" }
+androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "testRunner" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
