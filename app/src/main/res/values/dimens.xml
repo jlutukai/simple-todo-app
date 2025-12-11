@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Screen margins -->
+    <dimen name="screen_margin_horizontal">16dp</dimen>
+
+    <!-- Spacing (based on Tailwind scale) -->
+    <dimen name="spacing_xs">4dp</dimen>
+    <dimen name="spacing_sm">8dp</dimen>
+    <dimen name="spacing_md">12dp</dimen>
+    <dimen name="spacing_lg">16dp</dimen>
+    <dimen name="spacing_xl">24dp</dimen>
+
+    <!-- Header -->
+    <dimen name="header_title_size">24sp</dimen>
+    <dimen name="header_icon_size">24dp</dimen>
+    <dimen name="header_icon_touch_size">48dp</dimen>
+
+    <!-- Search bar -->
+    <dimen name="search_height">48dp</dimen>
+    <dimen name="search_corner_radius">12dp</dimen>
+    <dimen name="search_padding_horizontal">16dp</dimen>
+
+    <!-- Segmented tabs -->
+    <dimen name="tabs_height">40dp</dimen>
+    <dimen name="tabs_corner_radius">12dp</dimen>
+    <dimen name="tab_button_corner_radius">8dp</dimen>
+    <dimen name="tabs_padding">4dp</dimen>
+
+    <!-- Todo item -->
+    <dimen name="todo_item_padding_vertical">16dp</dimen>
+    <dimen name="todo_item_gap">12dp</dimen>
+    <dimen name="checkbox_size">24dp</dimen>
+    <dimen name="checkbox_stroke_width">2dp</dimen>
+    <dimen name="delete_icon_size">20dp</dimen>
+    <dimen name="todo_text_size">16sp</dimen>
+    <dimen name="divider_height">1dp</dimen>
+
+    <!-- FAB -->
+    <dimen name="fab_size">56dp</dimen>
+    <dimen name="fab_margin">24dp</dimen>
+    <dimen name="fab_icon_size">24dp</dimen>
+
+    <!-- Empty state -->
+    <dimen name="empty_icon_container_size">80dp</dimen>
+    <dimen name="empty_icon_size">36dp</dimen>
+    <dimen name="empty_title_size">18sp</dimen>
+    <dimen name="empty_subtitle_size">14sp</dimen>
+
+    <!-- Bottom sheet -->
+    <dimen name="bottom_sheet_handle_width">36dp</dimen>
+    <dimen name="bottom_sheet_handle_height">4dp</dimen>
+    <dimen name="bottom_sheet_corner_radius">12dp</dimen>
+    <dimen name="input_field_height">56dp</dimen>
+    <dimen name="input_field_min_height_multiline">144dp</dimen>
+    <dimen name="button_height">56dp</dimen>
+    <dimen name="button_corner_radius">8dp</dimen>
+
+    <!-- Todo detail -->
+    <dimen name="detail_title_size">32sp</dimen>
+    <dimen name="detail_section_title_size">18sp</dimen>
+    <dimen name="metadata_text_size">14sp</dimen>
+    <dimen name="toolbar_icon_touch_size">48dp</dimen>
+</resources>

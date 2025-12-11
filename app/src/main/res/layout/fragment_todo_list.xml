@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?android:attr/colorBackground"
+    tools:context=".ui.todolist.TodoListFragment">
+
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/screen_margin_horizontal"
+        android:layout_marginTop="@dimen/spacing_lg"
+        android:layout_marginEnd="@dimen/spacing_sm"
+        android:text="@string/todo_list_title"
+        android:textColor="@color/slate_900"
+        android:textSize="@dimen/header_title_size"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toStartOf="@id/btnMoreOptions"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageButton
+        android:id="@+id/btnMoreOptions"
+        android:layout_width="@dimen/header_icon_touch_size"
+        android:layout_height="@dimen/header_icon_touch_size"
+        android:layout_marginEnd="@dimen/spacing_xs"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/cd_more_options"
+        android:src="@drawable/ic_more_horiz"
+        app:layout_constraintBottom_toBottomOf="@id/tvTitle"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/tvTitle" />
+
+
+    <EditText
+        android:id="@+id/etSearch"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/search_height"
+        android:layout_marginHorizontal="@dimen/screen_margin_horizontal"
+        android:layout_marginTop="@dimen/spacing_md"
+        android:background="@drawable/bg_search"
+        android:drawableStart="@drawable/ic_search"
+        android:drawablePadding="@dimen/spacing_sm"
+        android:hint="@string/search_hint"
+        android:imeOptions="actionSearch"
+        android:importantForAutofill="no"
+        android:inputType="text"
+        android:maxLines="1"
+        android:paddingHorizontal="@dimen/search_padding_horizontal"
+        android:textColor="@color/slate_900"
+        android:textColorHint="@color/slate_400"
+        android:textSize="@dimen/todo_text_size"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvTitle" />
+
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/tabsContainer"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/tabs_height"
+        android:layout_marginHorizontal="@dimen/screen_margin_horizontal"
+        android:layout_marginTop="@dimen/spacing_md"
+        android:background="@drawable/bg_tabs"
+        android:padding="@dimen/tabs_padding"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/etSearch">
+
+
+        <View
+            android:id="@+id/tabSelector"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@drawable/bg_tab_selector"
+            android:elevation="1dp"
+            app:layout_constraintBottom_toBottomOf="@id/tabAll"
+            app:layout_constraintEnd_toEndOf="@id/tabAll"
+            app:layout_constraintStart_toStartOf="@id/tabAll"
+            app:layout_constraintTop_toTopOf="@id/tabAll" />
+
+
+        <TextView
+            android:id="@+id/tabAll"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:background="?attr/selectableItemBackground"
+            android:elevation="2dp"
+            android:gravity="center"
+            android:text="@string/tab_all"
+            android:textColor="@color/slate_900"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/tabCompleted"
+            app:layout_constraintHorizontal_weight="1"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <!-- Completed Tab -->
+        <TextView
+            android:id="@+id/tabCompleted"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:background="?attr/selectableItemBackground"
+            android:elevation="2dp"
+            android:gravity="center"
+            android:text="@string/tab_completed"
+            android:textColor="@color/slate_600"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_weight="1"
+            app:layout_constraintStart_toEndOf="@id/tabAll"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvTodos"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="@dimen/spacing_sm"
+        android:clipToPadding="false"
+        android:paddingHorizontal="@dimen/screen_margin_horizontal"
+        android:paddingBottom="80dp"
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tabsContainer"
+        tools:listitem="@layout/item_todo" />
+
+
+    <ViewStub
+        android:id="@+id/emptyStateStub"
+        android:layout="@layout/layout_empty_state"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:inflatedId="@+id/emptyState"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tabsContainer" />
+
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tabsContainer" />
+
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabAddTodo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/fab_margin"
+        android:contentDescription="@string/cd_add_task"
+        android:src="@drawable/ic_add"
+        app:backgroundTint="@color/primary"
+        app:fabCustomSize="@dimen/fab_size"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:maxImageSize="@dimen/fab_icon_size"
+        app:tint="@color/white" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

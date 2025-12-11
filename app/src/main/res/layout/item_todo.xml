@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingVertical="@dimen/todo_item_padding_vertical">
+
+    <!-- Circular Checkbox -->
+    <CheckBox
+        android:id="@+id/cbComplete"
+        android:layout_width="@dimen/checkbox_size"
+        android:layout_height="@dimen/checkbox_size"
+        android:button="@drawable/checkbox_circle"
+        android:contentDescription="@string/cd_toggle_complete"
+        app:layout_constraintBottom_toTopOf="@id/divider"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Task Title -->
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/todo_item_gap"
+        android:layout_marginEnd="@dimen/todo_item_gap"
+        android:ellipsize="end"
+        android:maxLines="2"
+        android:textColor="@color/slate_800"
+        android:textSize="@dimen/todo_text_size"
+        app:layout_constraintBottom_toTopOf="@id/divider"
+        app:layout_constraintEnd_toStartOf="@id/btnDelete"
+        app:layout_constraintStart_toEndOf="@id/cbComplete"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="Sample todo item" />
+
+    <!-- Delete Button -->
+    <ImageButton
+        android:id="@+id/btnDelete"
+        android:layout_width="@dimen/delete_icon_size"
+        android:layout_height="@dimen/delete_icon_size"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/cd_delete_task"
+        android:src="@drawable/ic_close"
+        app:layout_constraintBottom_toTopOf="@id/divider"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Bottom Divider -->
+    <View
+        android:id="@+id/divider"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/divider_height"
+        android:layout_marginStart="@dimen/todo_item_gap"
+        android:background="@color/slate_200"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/cbComplete" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

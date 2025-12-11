@@ -11,12 +11,17 @@ appcompat = "1.7.1"
 material = "1.13.0"
 activity = "1.12.1"
 constraintlayout = "2.2.1"
+navigationFragment = "2.9.6"
 roomRuntime = "2.8.4"
 rxandroid = "3.0.2"
 rxjava = "3.1.12"
+androidDesugarJdkLibs = "2.1.5"
 
 [libraries]
+android-desugarJdkLibs = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "androidDesugarJdkLibs" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-navigation-fragment = { module = "androidx.navigation:navigation-fragment", version.ref = "navigationFragment" }
+androidx-navigation-ui = { module = "androidx.navigation:navigation-ui", version.ref = "navigationFragment" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "roomRuntime" }
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "roomRuntime" }
 androidx-room-rxjava3 = { module = "androidx.room:room-rxjava3", version.ref = "roomRuntime" }
