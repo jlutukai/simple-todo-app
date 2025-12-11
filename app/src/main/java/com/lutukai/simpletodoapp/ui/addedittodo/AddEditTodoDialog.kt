@@ -10,6 +10,7 @@ import com.google.android.material.snackbar.Snackbar
 import com.lutukai.simpletodoapp.R
 import com.lutukai.simpletodoapp.data.local.entity.TodoEntity
 import com.lutukai.simpletodoapp.databinding.DialogAddEditTodoBinding
+import com.lutukai.simpletodoapp.util.setDebouncedClickListener
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -70,11 +71,11 @@ class AddEditTodoDialog : BottomSheetDialogFragment(), AddEditTodoContract.View 
     }
 
     private fun setupClickListeners() {
-        binding.btnCancel.setOnClickListener {
+        binding.btnCancel.setDebouncedClickListener {
             dismiss()
         }
 
-        binding.btnSave.setOnClickListener {
+        binding.btnSave.setDebouncedClickListener {
             if (validateInput()) {
                 saveTodo()
             }

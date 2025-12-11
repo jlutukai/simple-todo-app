@@ -13,6 +13,7 @@ import com.lutukai.simpletodoapp.R
 import com.lutukai.simpletodoapp.data.local.entity.TodoEntity
 import com.lutukai.simpletodoapp.databinding.DialogTodoDetailBinding
 import com.lutukai.simpletodoapp.ui.addedittodo.AddEditTodoDialog
+import com.lutukai.simpletodoapp.util.setDebouncedClickListener
 import dagger.hilt.android.AndroidEntryPoint
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -65,11 +66,11 @@ class TodoDetailDialog : BottomSheetDialogFragment(), TodoDetailContract.View {
     }
 
     private fun setupClickListeners() {
-        binding.btnClose.setOnClickListener {
+        binding.btnClose.setDebouncedClickListener {
             dismiss()
         }
 
-        binding.btnEdit.setOnClickListener {
+        binding.btnEdit.setDebouncedClickListener {
             presenter.onEditClicked()
         }
 

@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.lutukai.simpletodoapp.R
 import com.lutukai.simpletodoapp.data.local.entity.TodoEntity
 import com.lutukai.simpletodoapp.databinding.ItemTodoBinding
+import com.lutukai.simpletodoapp.util.setDebouncedClickListener
 
 class TodoAdapter(
     private val listener: TodoItemListener
@@ -66,15 +67,15 @@ class TodoAdapter(
                 }
 
                 // Click listeners
-                cbComplete.setOnClickListener {
+                cbComplete.setDebouncedClickListener {
                     listener.onToggleComplete(item)
                 }
 
-                btnDelete.setOnClickListener {
+                btnDelete.setDebouncedClickListener {
                     listener.onDelete(item)
                 }
 
-                root.setOnClickListener {
+                root.setDebouncedClickListener {
                     listener.onItemClick(item)
                 }
             }
