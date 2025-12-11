@@ -20,7 +20,7 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "com.lutukai.simpletodoapp.HiltTestRunner"
     }
 
     buildTypes {
@@ -45,6 +45,15 @@ android {
         viewBinding = true
     }
 
+    packaging {
+        resources {
+            excludes += listOf(
+                "META-INF/LICENSE.md",
+                "META-INF/LICENSE-notice.md"
+            )
+        }
+    }
+
 }
 
 dependencies {
@@ -56,6 +65,24 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+
+    // Room testing - in-memory database
+    androidTestImplementation(libs.androidx.room.testing)
+
+    // Hilt testing
+    androidTestImplementation(libs.hilt.android.testing)
+    kspAndroidTest(libs.hilt.android.compiler)
+
+    // Core test utilities
+    androidTestImplementation(libs.androidx.core.testing)
+
+    // Truth - fluent assertions
+    testImplementation(libs.truth)
+    androidTestImplementation(libs.truth)
+
+    // MockK - mocking for Repository unit tests
+    testImplementation(libs.mockk)
+    androidTestImplementation(libs.mockk.android)
 
     // Room
     implementation(libs.androidx.room.runtime)
