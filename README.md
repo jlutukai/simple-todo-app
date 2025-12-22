@@ -1,6 +1,6 @@
 # SimpleTodoApp
 
-A simple yet well-architected Android Todo application demonstrating **MVP (Model-View-Presenter)** architecture with **RxJava 3**, **Room Database**, and **Hilt Dependency Injection**.
+A simple yet well-architected Android Todo application demonstrating **MVVM (Model-View-ViewModel)** architecture with **Kotlin Coroutines & Flow**, **Room Database**, and **Hilt Dependency Injection**.
 
 ## Features
 
@@ -15,7 +15,7 @@ A simple yet well-architected Android Todo application demonstrating **MVP (Mode
 
 ## Architecture
 
-This project follows the **MVP (Model-View-Presenter)** architectural pattern with reactive programming using **RxJava 3**.
+This project follows the **MVVM (Model-View-ViewModel)** architectural pattern with reactive programming using **Kotlin Coroutines and Flow**.
 
 ### Project Structure
 
@@ -23,20 +23,23 @@ This project follows the **MVP (Model-View-Presenter)** architectural pattern wi
 com.lutukai.simpletodoapp/
 ├── data/
 │   ├── local/
-│   │   ├── dao/           → TodoDao (Room DAO with RxJava)
+│   │   ├── dao/           → TodoDao (Room DAO with Flow & suspend functions)
 │   │   ├── database/      → AppDataBase (Room Database)
 │   │   └── entity/        → TodoEntity (Data model)
-│   └── repository/        → TodoRepository (Data abstraction layer)
+│   ├── mapper/            → ToDomain.kt, ToEntity.kt (Entity ↔ Domain mapping)
+│   └── repository/        → TodoRepositoryImpl (Repository implementation)
 ├── di/
 │   ├── DatabaseModule     → Room & DAO providers
-│   └── RepositoryModule   → SchedulerProvider binding
+│   └── RepositoryModule   → Repository binding
+├── domain/
+│   ├── models/            → Todo (Domain model)
+│   └── repository/        → TodoRepository (Repository interface)
 ├── ui/
-│   ├── base/              → BaseView, BasePresenter (MVP contracts)
-│   ├── todolist/          → TodoListFragment, Presenter, Contract, Adapter
-│   ├── addedittodo/       → AddEditTodoDialog, Presenter, Contract
-│   └── tododetail/        → TodoDetailDialog, Presenter, Contract
+│   ├── todolist/          → TodoListFragment, ViewModel, UiState, Adapter
+│   ├── addedittodo/       → AddEditTodoDialog, ViewModel, UiState
+│   └── tododetail/        → TodoDetailDialog, ViewModel, UiState
 ├── util/
-│   └── schedulerprovider/ → SchedulerProvider interface & AppSchedulerProvider
+│   └── ViewExtensions.kt  → UI utility extensions
 ├── MainActivity.kt
 └── TodoApp.kt             → @HiltAndroidApp
 ```
@@ -52,57 +55,71 @@ com.lutukai.simpletodoapp/
 ┌─────────────────────────────────────────────────────────────────┐
 │                    VIEW (Fragment/Dialog)                        │
 │  • Captures user input                                           │
-│  • Delegates to Presenter                                        │
-│  • Displays results                                              │
+│  • Calls ViewModel methods                                       │
+│  • Observes StateFlow for UI state                               │
+│  • Collects Events for one-time actions                          │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                        PRESENTER                                 │
-│  • Handles business logic                                        │
-│  • Manages RxJava subscriptions (CompositeDisposable)            │
-│  • Updates View state (showLoading, showTodos, showError)        │
+│                        VIEWMODEL                                 │
+│  • Holds UI state (MutableStateFlow → StateFlow)                 │
+│  • Emits one-time events (Channel → Flow)                        │
+│  • Launches coroutines in viewModelScope                         │
+│  • Calls repository suspend functions                            │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                       REPOSITORY                                 │
-│  • Abstracts data source                                         │
-│  • Applies schedulers (subscribeOn IO, observeOn UI)             │
-│  • Returns RxJava types (Flowable, Single, Maybe, Completable)   │
+│                   DOMAIN LAYER (Interface)                       │
+│  • TodoRepository interface                                      │
+│  • Defines contract for data operations                          │
+│  • Returns Flow for reactive streams, suspend for one-shot ops   │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                   DATA LAYER (Implementation)                    │
+│  • TodoRepositoryImpl                                            │
+│  • Maps Entity ↔ Domain models                                   │
+│  • Delegates to Room DAO                                         │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                     ROOM DAO + DATABASE                          │
 │  • SQLite operations via Room                                    │
-│  • Reactive queries with RxJava integration                      │
+│  • Flow queries for reactive updates                             │
+│  • Suspend functions for CRUD operations                         │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### MVP Contract Pattern
+### StateFlow + Channel Pattern
 
-The app uses a Contract interface pattern to define the communication between View and Presenter:
+The app uses StateFlow for UI state and Channel for one-time events:
 
 ```kotlin
-interface TodoListContract {
+// UiState - represents screen state
+data class TodoListUiState(
+    val todos: List<Todo> = emptyList(),
+    val isLoading: Boolean = false,
+    val error: String? = null
+)
 
-    interface View : BaseView {
-        fun showTodos(todos: List<TodoEntity>)
-        fun showEmpty()
-        fun showTodoDeleted(todo: TodoEntity)
-        fun navigateToAddTodo()
-        fun navigateToTodoDetail(todoId: Long)
-    }
+// Events - one-time actions
+sealed class TodoListEvent {
+    data class ShowSnackbar(val message: String, val todo: Todo) : TodoListEvent()
+    data class NavigateToDetail(val todoId: Long) : TodoListEvent()
+    data object NavigateToAddTodo : TodoListEvent()
+}
 
-    interface Presenter : BasePresenter<View> {
-        fun loadTodos()
-        fun addNewTodo()
-        fun openTodoDetail(todo: TodoEntity)
-        fun toggleComplete(todo: TodoEntity)
-        fun deleteTodo(todo: TodoEntity)
-        fun undoDelete(todo: TodoEntity)
-    }
+// ViewModel exposes state and events
+class TodoListViewModel @Inject constructor(...) : ViewModel() {
+    private val _uiState = MutableStateFlow(TodoListUiState())
+    val uiState: StateFlow<TodoListUiState> = _uiState.asStateFlow()
+
+    private val _events = Channel<TodoListEvent>(Channel.BUFFERED)
+    val events = _events.receiveAsFlow()
 }
 ```
 
@@ -110,11 +127,12 @@ interface TodoListContract {
 
 | Decision | Rationale |
 |----------|-----------|
-| **MVP over MVVM** | Explicit view-presenter communication with clear separation of concerns |
-| **RxJava 3** | Reactive streams for async operations and automatic threading management |
+| **MVVM with StateFlow** | Lifecycle-aware state management with single source of truth |
+| **Kotlin Coroutines + Flow** | Modern async handling with structured concurrency |
 | **Repository Pattern** | Clean abstraction over data sources, easier to test and extend |
-| **Hilt DI** | Compile-time dependency injection with less boilerplate than Dagger |
-| **SchedulerProvider** | Abstraction over RxJava schedulers enables easy testing |
+| **Domain Layer** | Separates business models from data layer entities |
+| **Hilt DI** | Compile-time dependency injection with less boilerplate |
+| **Channel for Events** | Prevents re-delivery of one-time events on configuration change |
 
 ---
 
@@ -130,9 +148,11 @@ interface TodoListContract {
 | Core Android | androidx-constraintlayout | 2.2.1 | Flexible UI layout system |
 | UI | material | 1.13.0 | Material Design 3 components |
 | Database | room-runtime | 2.8.4 | SQLite abstraction layer |
-| Database | room-rxjava3 | 2.8.4 | Room + RxJava 3 integration |
-| Reactive | rxjava | 3.1.12 | Reactive extensions for Java |
-| Reactive | rxandroid | 3.0.2 | RxJava bindings for Android (main thread scheduler) |
+| Database | room-ktx | 2.8.4 | Room + Coroutines/Flow integration |
+| Async | kotlinx-coroutines-core | 1.9.0 | Kotlin coroutines |
+| Async | kotlinx-coroutines-android | 1.9.0 | Android main thread dispatcher |
+| Lifecycle | lifecycle-viewmodel-ktx | 2.8.7 | ViewModel with coroutine support |
+| Lifecycle | lifecycle-runtime-ktx | 2.8.7 | Lifecycle-aware coroutine scopes |
 | DI | hilt-android | 2.57.2 | Dependency injection framework |
 | Navigation | navigation-fragment | 2.9.6 | Fragment-based navigation |
 | Navigation | navigation-ui | 2.9.6 | Navigation UI integration |
@@ -145,6 +165,8 @@ interface TodoListContract {
 | junit | 4.13.2 | Unit testing framework |
 | truth | 1.4.4 | Fluent assertions library (Google) |
 | mockk | 1.13.13 | Kotlin-first mocking library |
+| turbine | 1.2.0 | Flow testing library |
+| kotlinx-coroutines-test | 1.9.0 | Coroutine testing utilities |
 | robolectric | 4.14.1 | JVM-based Android framework simulation |
 | espresso-core | 3.7.0 | UI testing framework |
 | room-testing | 2.8.4 | In-memory Room database for tests |
@@ -176,7 +198,7 @@ interface TodoListContract {
             ┌┴───────────────┴┐
            │   Integration    │  ← Room DAO, Robolectric
           ┌┴─────────────────┴┐
-         │     Unit Tests     │  ← Presenter, Repository, Entity
+         │     Unit Tests     │  ← ViewModel, Repository, Entity
         └─────────────────────┘
 ```
 
@@ -184,21 +206,19 @@ interface TodoListContract {
 
 | Test File | Coverage Area |
 |-----------|---------------|
-| `TodoRepositoryTest.kt` | Repository delegation to DAO, RxJava error handling, scheduler verification |
+| `TodoRepositoryTest.kt` | Repository delegation to DAO, mapping, error handling |
 | `TodoEntityTest.kt` | Entity data class defaults, copy function, equality/hashCode |
-| `TodoListPresenterTest.kt` | List loading, filtering, delete/undo, UI state sequences |
-| `AddEditTodoPresenterTest.kt` | Save/load todo operations, form validation |
-| `TodoDetailPresenterTest.kt` | Detail view loading, toggle complete functionality |
+| `TodoListViewModelTest.kt` | List loading, filtering, delete/undo, state emissions |
+| `AddEditTodoViewModelTest.kt` | Save/load todo operations, form validation |
+| `TodoDetailViewModelTest.kt` | Detail view loading, toggle complete functionality |
 | `TodoAdapterTest.kt` | DiffUtil `areItemsTheSame` and `areContentsTheSame` logic |
 | `TodoListFragmentTest.kt` | Fragment UI visibility with Robolectric |
-| `AddEditTodoDialogTest.kt` | Dialog ADD/EDIT modes, input field states |
-| `TodoDetailDialogTest.kt` | Detail dialog UI element visibility |
 
 ### Instrumented Tests (`app/src/androidTest`)
 
 | Test File | Coverage Area |
 |-----------|---------------|
-| `TodoDaoTest.kt` | CRUD operations with in-memory Room database, Flowable emissions on data changes |
+| `TodoDaoTest.kt` | CRUD operations with in-memory Room database, Flow emissions on data changes |
 | `MigrationTest.kt` | Database schema validation, column existence verification |
 
 ### Testing Patterns
@@ -206,8 +226,8 @@ interface TodoListContract {
 | Pattern | Description |
 |---------|-------------|
 | **MockK** | Kotlin-friendly mocking with `relaxed = true` for flexible test setup |
-| **Trampoline Scheduler** | Synchronous RxJava execution for deterministic tests |
-| **verifyOrder{}** | UI state sequence validation (showLoading → hideLoading → showContent) |
+| **Turbine** | Flow testing with `test {}` block for collecting and asserting emissions |
+| **runTest** | Coroutine test dispatcher for deterministic async testing |
 | **In-memory Room DB** | Real database operations without persistence for integration tests |
 | **HiltTestRunner** | Custom test runner for dependency injection in tests |
 | **launchFragmentInHiltContainer** | Custom extension for fragment testing with Hilt |
@@ -276,30 +296,31 @@ SimpleTodoApp/
 │   │   │   │   │   │   ├── dao/TodoDao.kt
 │   │   │   │   │   │   ├── database/AppDataBase.kt
 │   │   │   │   │   │   └── entity/TodoEntity.kt
-│   │   │   │   │   └── repository/TodoRepository.kt
+│   │   │   │   │   ├── mapper/
+│   │   │   │   │   │   ├── ToDomain.kt
+│   │   │   │   │   │   └── ToEntity.kt
+│   │   │   │   │   └── repository/TodoRepositoryImpl.kt
 │   │   │   │   ├── di/
 │   │   │   │   │   ├── DatabaseModule.kt
 │   │   │   │   │   └── RepositoryModule.kt
+│   │   │   │   ├── domain/
+│   │   │   │   │   ├── models/Todo.kt
+│   │   │   │   │   └── repository/TodoRepository.kt
 │   │   │   │   ├── ui/
-│   │   │   │   │   ├── base/
-│   │   │   │   │   │   ├── BasePresenter.kt
-│   │   │   │   │   │   └── BaseView.kt
 │   │   │   │   │   ├── todolist/
 │   │   │   │   │   │   ├── TodoAdapter.kt
-│   │   │   │   │   │   ├── TodoListContract.kt
 │   │   │   │   │   │   ├── TodoListFragment.kt
-│   │   │   │   │   │   └── TodoListPresenter.kt
+│   │   │   │   │   │   ├── TodoListViewModel.kt
+│   │   │   │   │   │   └── TodoListUiState.kt
 │   │   │   │   │   ├── addedittodo/
-│   │   │   │   │   │   ├── AddEditTodoContract.kt
 │   │   │   │   │   │   ├── AddEditTodoDialog.kt
-│   │   │   │   │   │   └── AddEditTodoPresenter.kt
+│   │   │   │   │   │   ├── AddEditTodoViewModel.kt
+│   │   │   │   │   │   └── AddEditTodoUiState.kt
 │   │   │   │   │   └── tododetail/
-│   │   │   │   │       ├── TodoDetailContract.kt
 │   │   │   │   │       ├── TodoDetailDialog.kt
-│   │   │   │   │       └── TodoDetailPresenter.kt
-│   │   │   │   ├── util/schedulerprovider/
-│   │   │   │   │   ├── AppSchedulerProvider.kt
-│   │   │   │   │   └── SchedulerProvider.kt
+│   │   │   │   │       ├── TodoDetailViewModel.kt
+│   │   │   │   │       └── TodoDetailUiState.kt
+│   │   │   │   ├── util/ViewExtensions.kt
 │   │   │   │   ├── MainActivity.kt
 │   │   │   │   └── TodoApp.kt
 │   │   │   └── res/
@@ -313,6 +334,4 @@ SimpleTodoApp/
 
 ---
 
-## License
 
-This project is for educational purposes.
