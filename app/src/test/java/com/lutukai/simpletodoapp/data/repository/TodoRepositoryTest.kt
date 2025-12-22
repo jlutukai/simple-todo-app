@@ -1,256 +1,211 @@
 package com.lutukai.simpletodoapp.data.repository
 
+import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import com.lutukai.simpletodoapp.data.local.dao.TodoDao
 import com.lutukai.simpletodoapp.data.local.entity.TodoEntity
-import com.lutukai.simpletodoapp.util.schedulerprovider.SchedulerProvider
+import com.lutukai.simpletodoapp.domain.models.Todo
+import com.lutukai.simpletodoapp.domain.repository.TodoRepository
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import io.reactivex.rxjava3.core.Completable
-import io.reactivex.rxjava3.core.Flowable
-import io.reactivex.rxjava3.core.Maybe
-import io.reactivex.rxjava3.core.Single
-import io.reactivex.rxjava3.schedulers.Schedulers
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
 
 class TodoRepositoryTest {
 
     private lateinit var todoDao: TodoDao
-    private lateinit var schedulerProvider: SchedulerProvider
     private lateinit var repository: TodoRepository
 
     @Before
     fun setup() {
         todoDao = mockk()
-        schedulerProvider = mockk {
-            every { io() } returns Schedulers.trampoline()
-            every { ui() } returns Schedulers.trampoline()
-            every { computation() } returns Schedulers.trampoline()
-        }
-        repository = TodoRepository(todoDao, schedulerProvider)
+        repository = TodoRepositoryImpl(todoDao)
     }
 
     // ============== GET ALL TODOS TESTS ==============
 
     @Test
-    fun `getAllTodos delegates to DAO`() {
-        val todos = listOf(createTodo(1, "Todo 1"), createTodo(2, "Todo 2"))
-        every { todoDao.getAllTodos() } returns Flowable.just(todos)
+    fun `getAllTodos delegates to DAO`() = runTest {
+        val todos = listOf(createTodoEntity(1, "Todo 1"), createTodoEntity(2, "Todo 2"))
+        every { todoDao.getAllTodos() } returns flowOf(todos)
 
-        val result = repository.getAllTodos().blockingFirst()
+        repository.getAllTodos().test {
+            val result = awaitItem()
+            assertThat(result).hasSize(2)
+            assertThat(result[0].title).isEqualTo("Todo 1")
+            awaitComplete()
+        }
 
-        assertThat(result).hasSize(2)
-        assertThat(result[0].title).isEqualTo("Todo 1")
         verify { todoDao.getAllTodos() }
     }
 
     @Test
-    fun `getAllTodos subscribes on IO scheduler`() {
-        every { todoDao.getAllTodos() } returns Flowable.just(emptyList())
-
-        repository.getAllTodos().blockingFirst()
-
-        verify { schedulerProvider.io() }
-    }
-
-    @Test
-    fun `getAllTodos emits error from DAO`() {
+    fun `getAllTodos emits error from DAO`() = runTest {
         val error = RuntimeException("Database error")
-        every { todoDao.getAllTodos() } returns Flowable.error(error)
+        every { todoDao.getAllTodos() } returns flow { throw error }
 
-        val testObserver = repository.getAllTodos().test()
-
-        testObserver.assertError { it is RuntimeException || it.cause is RuntimeException }
+        repository.getAllTodos().test {
+            val thrownError = awaitError()
+            assertThat(thrownError).isInstanceOf(RuntimeException::class.java)
+            assertThat(thrownError.message).isEqualTo("Database error")
+        }
     }
 
     // ============== GET TODO BY ID TESTS ==============
 
     @Test
-    fun `getTodoById delegates to DAO`() {
-        val todo = createTodo(1, "Test Todo")
-        every { todoDao.getTodoById(1L) } returns Maybe.just(todo)
+    fun `getTodoById delegates to DAO`() = runTest {
+        val todo = createTodoEntity(1, "Test Todo")
+        coEvery { todoDao.getTodoById(1L) } returns todo
 
-        val result = repository.getTodoById(1L).blockingGet()
+        val result = repository.getTodoById(1L)
 
         assertThat(result?.title).isEqualTo("Test Todo")
-        verify { todoDao.getTodoById(1L) }
+        coVerify { todoDao.getTodoById(1L) }
     }
 
     @Test
-    fun `getTodoById returns empty when todo not found`() {
-        every { todoDao.getTodoById(999L) } returns Maybe.empty()
+    fun `getTodoById returns null when todo not found`() = runTest {
+        coEvery { todoDao.getTodoById(999L) } returns null
 
-        val testObserver = repository.getTodoById(999L).test()
+        val result = repository.getTodoById(999L)
 
-        testObserver.assertComplete()
-        testObserver.assertNoValues()
-    }
-
-    @Test
-    fun `getTodoByIdOrError delegates to DAO`() {
-        val todo = createTodo(1, "Test Todo")
-        every { todoDao.getTodoByIdOrError(1L) } returns Single.just(todo)
-
-        val result = repository.getTodoByIdOrError(1L).blockingGet()
-
-        assertThat(result.title).isEqualTo("Test Todo")
-        verify { todoDao.getTodoByIdOrError(1L) }
-    }
-
-    @Test
-    fun `getTodoByIdOrError propagates error when todo not found`() {
-        val error = RuntimeException("Todo not found")
-        every { todoDao.getTodoByIdOrError(999L) } returns Single.error(error)
-
-        val testObserver = repository.getTodoByIdOrError(999L).test()
-
-        testObserver.assertError { it is RuntimeException || it.cause is RuntimeException }
+        assertThat(result).isNull()
     }
 
     // ============== INSERT TESTS ==============
 
     @Test
-    fun `insertTodo delegates to DAO`() {
-        val todo = createTodo(title = "New Todo")
-        every { todoDao.insertTodo(todo) } returns Completable.complete()
+    fun `insertTodo delegates to DAO`() = runTest {
+        val todo = createDomainTodo(title = "New Todo")
+        coEvery { todoDao.insertTodo(any()) } returns Unit
 
-        repository.insertTodo(todo).blockingAwait()
+        repository.insertTodo(todo)
 
-        verify { todoDao.insertTodo(todo) }
+        coVerify { todoDao.insertTodo(any()) }
     }
 
     @Test
-    fun `insertTodo subscribes on IO scheduler`() {
-        val todo = createTodo(title = "New Todo")
-        every { todoDao.insertTodo(todo) } returns Completable.complete()
+    fun `insertTodoWithId delegates to DAO and returns ID`() = runTest {
+        val todo = createDomainTodo(title = "New Todo")
+        coEvery { todoDao.insertTodoWithId(any()) } returns 42L
 
-        repository.insertTodo(todo).blockingAwait()
-
-        verify { schedulerProvider.io() }
-    }
-
-    @Test
-    fun `insertTodoWithId delegates to DAO and returns ID`() {
-        val todo = createTodo(title = "New Todo")
-        every { todoDao.insertTodoWithId(todo) } returns Single.just(42L)
-
-        val result = repository.insertTodoWithId(todo).blockingGet()
+        val result = repository.insertTodoWithId(todo)
 
         assertThat(result).isEqualTo(42L)
-        verify { todoDao.insertTodoWithId(todo) }
+        coVerify { todoDao.insertTodoWithId(any()) }
     }
 
     @Test
-    fun `insertTodo propagates error from DAO`() {
-        val todo = createTodo(title = "New Todo")
+    fun `insertTodo propagates error from DAO`() = runTest {
+        val todo = createDomainTodo(title = "New Todo")
         val error = RuntimeException("Insert failed")
-        every { todoDao.insertTodo(todo) } returns Completable.error(error)
+        coEvery { todoDao.insertTodo(any()) } throws error
 
-        val testObserver = repository.insertTodo(todo).test()
+        var thrownError: Throwable? = null
+        try {
+            repository.insertTodo(todo)
+        } catch (e: Exception) {
+            thrownError = e
+        }
 
-        testObserver.assertError { it is RuntimeException || it.cause is RuntimeException }
+        assertThat(thrownError).isInstanceOf(RuntimeException::class.java)
+        assertThat(thrownError?.message).isEqualTo("Insert failed")
     }
 
     // ============== UPDATE TESTS ==============
 
     @Test
-    fun `updateTodo delegates to DAO`() {
-        val todo = createTodo(1, "Updated Todo")
-        every { todoDao.updateTodo(todo) } returns Completable.complete()
+    fun `updateTodo delegates to DAO`() = runTest {
+        val todo = createDomainTodo(1, "Updated Todo")
+        coEvery { todoDao.updateTodo(any()) } returns Unit
 
-        repository.updateTodo(todo).blockingAwait()
+        repository.updateTodo(todo)
 
-        verify { todoDao.updateTodo(todo) }
+        coVerify { todoDao.updateTodo(any()) }
     }
 
     @Test
-    fun `updateTodo subscribes on IO scheduler`() {
-        val todo = createTodo(1, "Updated Todo")
-        every { todoDao.updateTodo(todo) } returns Completable.complete()
-
-        repository.updateTodo(todo).blockingAwait()
-
-        verify { schedulerProvider.io() }
-    }
-
-    @Test
-    fun `updateTodo propagates error from DAO`() {
-        val todo = createTodo(1, "Updated Todo")
+    fun `updateTodo propagates error from DAO`() = runTest {
+        val todo = createDomainTodo(1, "Updated Todo")
         val error = RuntimeException("Update failed")
-        every { todoDao.updateTodo(todo) } returns Completable.error(error)
+        coEvery { todoDao.updateTodo(any()) } throws error
 
-        val testObserver = repository.updateTodo(todo).test()
+        var thrownError: Throwable? = null
+        try {
+            repository.updateTodo(todo)
+        } catch (e: Exception) {
+            thrownError = e
+        }
 
-        testObserver.assertError { it is RuntimeException || it.cause is RuntimeException }
+        assertThat(thrownError).isInstanceOf(RuntimeException::class.java)
+        assertThat(thrownError?.message).isEqualTo("Update failed")
     }
 
     // ============== DELETE TESTS ==============
 
     @Test
-    fun `deleteTodo delegates to DAO`() {
-        val todo = createTodo(1, "Todo to delete")
-        every { todoDao.deleteTodo(todo) } returns Completable.complete()
+    fun `deleteTodo delegates to DAO`() = runTest {
+        val todo = createDomainTodo(1, "Todo to delete")
+        coEvery { todoDao.deleteTodo(any()) } returns Unit
 
-        repository.deleteTodo(todo).blockingAwait()
+        repository.deleteTodo(todo)
 
-        verify { todoDao.deleteTodo(todo) }
+        coVerify { todoDao.deleteTodo(any()) }
     }
 
     @Test
-    fun `deleteTodo subscribes on IO scheduler`() {
-        val todo = createTodo(1, "Todo to delete")
-        every { todoDao.deleteTodo(todo) } returns Completable.complete()
-
-        repository.deleteTodo(todo).blockingAwait()
-
-        verify { schedulerProvider.io() }
-    }
-
-    @Test
-    fun `deleteTodo propagates error from DAO`() {
-        val todo = createTodo(1, "Todo to delete")
+    fun `deleteTodo propagates error from DAO`() = runTest {
+        val todo = createDomainTodo(1, "Todo to delete")
         val error = RuntimeException("Delete failed")
-        every { todoDao.deleteTodo(todo) } returns Completable.error(error)
+        coEvery { todoDao.deleteTodo(any()) } throws error
 
-        val testObserver = repository.deleteTodo(todo).test()
+        var thrownError: Throwable? = null
+        try {
+            repository.deleteTodo(todo)
+        } catch (e: Exception) {
+            thrownError = e
+        }
 
-        testObserver.assertError { it is RuntimeException || it.cause is RuntimeException }
+        assertThat(thrownError).isInstanceOf(RuntimeException::class.java)
+        assertThat(thrownError?.message).isEqualTo("Delete failed")
     }
 
     @Test
-    fun `deleteCompletedTodos delegates to DAO and returns count`() {
-        every { todoDao.deleteCompletedTodos() } returns Single.just(5)
+    fun `deleteCompletedTodos delegates to DAO and returns count`() = runTest {
+        coEvery { todoDao.deleteCompletedTodos() } returns 5
 
-        val result = repository.deleteCompletedTodos().blockingGet()
+        val result = repository.deleteCompletedTodos()
 
         assertThat(result).isEqualTo(5)
-        verify { todoDao.deleteCompletedTodos() }
+        coVerify { todoDao.deleteCompletedTodos() }
     }
 
     @Test
-    fun `deleteCompletedTodos subscribes on IO scheduler`() {
-        every { todoDao.deleteCompletedTodos() } returns Single.just(0)
-
-        repository.deleteCompletedTodos().blockingGet()
-
-        verify { schedulerProvider.io() }
-    }
-
-    @Test
-    fun `deleteCompletedTodos propagates error from DAO`() {
+    fun `deleteCompletedTodos propagates error from DAO`() = runTest {
         val error = RuntimeException("Delete failed")
-        every { todoDao.deleteCompletedTodos() } returns Single.error(error)
+        coEvery { todoDao.deleteCompletedTodos() } throws error
 
-        val testObserver = repository.deleteCompletedTodos().test()
+        var thrownError: Throwable? = null
+        try {
+            repository.deleteCompletedTodos()
+        } catch (e: Exception) {
+            thrownError = e
+        }
 
-        testObserver.assertError { it is RuntimeException || it.cause is RuntimeException }
+        assertThat(thrownError).isInstanceOf(RuntimeException::class.java)
+        assertThat(thrownError?.message).isEqualTo("Delete failed")
     }
 
     // ============== HELPER FUNCTIONS ==============
 
-    private fun createTodo(
+    private fun createTodoEntity(
         id: Long = 0,
         title: String,
         description: String = "",
@@ -259,6 +214,24 @@ class TodoRepositoryTest {
         createdAt: Long = System.currentTimeMillis()
     ): TodoEntity {
         return TodoEntity(
+            id = id,
+            title = title,
+            description = description,
+            isCompleted = isCompleted,
+            completedAt = completedAt,
+            createdAt = createdAt
+        )
+    }
+
+    private fun createDomainTodo(
+        id: Long = 0,
+        title: String,
+        description: String = "",
+        isCompleted: Boolean = false,
+        completedAt: Long? = null,
+        createdAt: Long = System.currentTimeMillis()
+    ): Todo {
+        return Todo(
             id = id,
             title = title,
             description = description,

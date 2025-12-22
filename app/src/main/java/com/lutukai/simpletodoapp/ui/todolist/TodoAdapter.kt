@@ -8,26 +8,26 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.lutukai.simpletodoapp.R
-import com.lutukai.simpletodoapp.data.local.entity.TodoEntity
+import com.lutukai.simpletodoapp.domain.models.Todo
 import com.lutukai.simpletodoapp.databinding.ItemTodoBinding
 import com.lutukai.simpletodoapp.util.setDebouncedClickListener
 
 class TodoAdapter(
     private val listener: TodoItemListener
-) : ListAdapter<TodoEntity, TodoAdapter.TodoViewHolder>(TodoComp) {
+) : ListAdapter<Todo, TodoAdapter.TodoViewHolder>(TodoComp) {
 
     interface TodoItemListener {
-        fun onToggleComplete(todo: TodoEntity)
-        fun onDelete(todo: TodoEntity)
-        fun onItemClick(todo: TodoEntity)
+        fun onToggleComplete(todo: Todo)
+        fun onDelete(todo: Todo)
+        fun onItemClick(todo: Todo)
     }
 
-    private object TodoComp : DiffUtil.ItemCallback<TodoEntity>() {
-        override fun areItemsTheSame(oldItem: TodoEntity, newItem: TodoEntity): Boolean {
+    private object TodoComp : DiffUtil.ItemCallback<Todo>() {
+        override fun areItemsTheSame(oldItem: Todo, newItem: Todo): Boolean {
             return oldItem.id == newItem.id
         }
 
-        override fun areContentsTheSame(oldItem: TodoEntity, newItem: TodoEntity): Boolean {
+        override fun areContentsTheSame(oldItem: Todo, newItem: Todo): Boolean {
             return oldItem == newItem
         }
     }
@@ -52,7 +52,7 @@ class TodoAdapter(
         private val listener: TodoItemListener
     ) : RecyclerView.ViewHolder(binding.root) {
 
-        fun bindTodoItem(item: TodoEntity) {
+        fun bindTodoItem(item: Todo) {
             with(binding) {
                 tvTitle.text = item.title
                 cbComplete.isChecked = item.isCompleted

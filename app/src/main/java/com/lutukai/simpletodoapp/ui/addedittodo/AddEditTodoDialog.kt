@@ -5,25 +5,27 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.snackbar.Snackbar
 import com.lutukai.simpletodoapp.R
-import com.lutukai.simpletodoapp.data.local.entity.TodoEntity
 import com.lutukai.simpletodoapp.databinding.DialogAddEditTodoBinding
 import com.lutukai.simpletodoapp.util.setDebouncedClickListener
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
-class AddEditTodoDialog : BottomSheetDialogFragment(), AddEditTodoContract.View {
+class AddEditTodoDialog : BottomSheetDialogFragment() {
 
     enum class Mode { ADD, EDIT }
 
     private var _binding: DialogAddEditTodoBinding? = null
     private val binding get() = _binding!!
 
-    @Inject
-    lateinit var presenter: AddEditTodoPresenter
+    private val viewModel: AddEditTodoViewModel by viewModels()
 
     private var mode: Mode = Mode.ADD
     private var todoId: Long? = null
@@ -45,11 +47,10 @@ class AddEditTodoDialog : BottomSheetDialogFragment(), AddEditTodoContract.View 
         parseArguments()
         setupUI()
         setupClickListeners()
-
-        presenter.attach(this)
+        observeViewModel()
 
         if (mode == Mode.EDIT && todoId != null) {
-            presenter.loadTodo(todoId!!)
+            viewModel.loadTodo(todoId!!)
         }
     }
 
@@ -97,35 +98,39 @@ class AddEditTodoDialog : BottomSheetDialogFragment(), AddEditTodoContract.View 
         val description = binding.etDescription.text?.toString().orEmpty().trim()
         val isCompleted = binding.switchCompleted.isChecked
 
-        presenter.saveTodo(title, description, isCompleted, todoId)
+        viewModel.saveTodo(title, description, isCompleted, todoId)
     }
 
-    // AddEditTodoContract.View implementation
+    private fun observeViewModel() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.uiState.collect { state ->
+                        binding.btnSave.isEnabled = !state.isLoading
 
-    override fun showTodo(todo: TodoEntity) {
-        binding.etTitle.setText(todo.title)
-        binding.etDescription.setText(todo.description)
-        binding.switchCompleted.isChecked = todo.isCompleted
-    }
+                        state.todo?.let { todo ->
+                            binding.etTitle.setText(todo.title)
+                            binding.etDescription.setText(todo.description)
+                            binding.switchCompleted.isChecked = todo.isCompleted
+                        }
+                    }
+                }
 
-    override fun onSaveSuccess() {
-        dismiss()
-    }
-
-    override fun showLoading() {
-        binding.btnSave.isEnabled = false
-    }
-
-    override fun hideLoading() {
-        binding.btnSave.isEnabled = true
-    }
-
-    override fun showError(message: String) {
-        Snackbar.make(binding.root, message, Snackbar.LENGTH_SHORT).show()
+                launch {
+                    viewModel.events.collect { event ->
+                        when (event) {
+                            is AddEditTodoEvent.SaveSuccess -> dismiss()
+                            is AddEditTodoEvent.ShowError -> {
+                                Snackbar.make(binding.root, event.message, Snackbar.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     override fun onDestroyView() {
-        presenter.detach()
         super.onDestroyView()
         _binding = null
     }

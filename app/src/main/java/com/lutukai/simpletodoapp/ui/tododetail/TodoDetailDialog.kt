@@ -6,28 +6,31 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.snackbar.Snackbar
 import com.lutukai.simpletodoapp.R
-import com.lutukai.simpletodoapp.data.local.entity.TodoEntity
+import com.lutukai.simpletodoapp.domain.models.Todo
 import com.lutukai.simpletodoapp.databinding.DialogTodoDetailBinding
 import com.lutukai.simpletodoapp.ui.addedittodo.AddEditTodoDialog
 import com.lutukai.simpletodoapp.util.setDebouncedClickListener
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import javax.inject.Inject
 
 @AndroidEntryPoint
-class TodoDetailDialog : BottomSheetDialogFragment(), TodoDetailContract.View {
+class TodoDetailDialog : BottomSheetDialogFragment() {
 
     private var _binding: DialogTodoDetailBinding? = null
     private val binding get() = _binding!!
 
-    @Inject
-    lateinit var presenter: TodoDetailPresenter
+    private val viewModel: TodoDetailViewModel by viewModels()
 
     private var todoId: Long = NO_TODO_ID
     private val dateFormat = SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault())
@@ -48,13 +51,12 @@ class TodoDetailDialog : BottomSheetDialogFragment(), TodoDetailContract.View {
 
         parseArguments()
         setupClickListeners()
-
-        presenter.attach(this)
+        observeViewModel()
 
         if (todoId != NO_TODO_ID) {
-            presenter.loadTodo(todoId)
+            viewModel.loadTodo(todoId)
         } else {
-            showError("Todo not found")
+            Snackbar.make(binding.root, "Todo not found", Snackbar.LENGTH_SHORT).show()
             dismiss()
         }
     }
@@ -71,15 +73,46 @@ class TodoDetailDialog : BottomSheetDialogFragment(), TodoDetailContract.View {
         }
 
         binding.btnEdit.setDebouncedClickListener {
-            presenter.onEditClicked()
+            viewModel.onEditClicked()
         }
 
         binding.switchCompleted.setOnCheckedChangeListener { _, isChecked ->
-            presenter.toggleComplete(isChecked)
+            viewModel.toggleComplete(isChecked)
         }
     }
 
-    override fun showTodo(todo: TodoEntity) {
+    private fun observeViewModel() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.uiState.collect { state ->
+                        state.todo?.let { todo ->
+                            showTodo(todo)
+                        }
+                    }
+                }
+
+                launch {
+                    viewModel.events.collect { event ->
+                        when (event) {
+                            is TodoDetailEvent.NavigateToEdit -> {
+                                findNavController().navigate(
+                                    R.id.action_todoDetail_to_addEditTodo,
+                                    bundleOf(AddEditTodoDialog.ARG_TODO_ID to event.todoId)
+                                )
+//                                dismiss()
+                            }
+                            is TodoDetailEvent.ShowError -> {
+                                Snackbar.make(binding.root, event.message, Snackbar.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun showTodo(todo: Todo) {
         binding.tvTitle.text = todo.title
         binding.tvDescription.text = todo.description.ifEmpty { "-" }
 
@@ -87,11 +120,11 @@ class TodoDetailDialog : BottomSheetDialogFragment(), TodoDetailContract.View {
         binding.switchCompleted.setOnCheckedChangeListener(null)
         binding.switchCompleted.isChecked = todo.isCompleted
         binding.switchCompleted.setOnCheckedChangeListener { _, isChecked ->
-            presenter.toggleComplete(isChecked)
+            viewModel.toggleComplete(isChecked)
         }
 
         // Format and display dates
-        binding.tvCreatedAt.text = formatDate(todo.createdAt)
+        binding.tvCreatedAt.text = todo.createdAt?.let { formatDate(it) } ?: "-"
 
         // Show completed date only if completed
         binding.completedOnContainer.isVisible = todo.isCompleted && todo.completedAt != null
@@ -104,32 +137,7 @@ class TodoDetailDialog : BottomSheetDialogFragment(), TodoDetailContract.View {
         return dateFormat.format(Date(timestamp))
     }
 
-    override fun navigateToEdit(todoId: Long) {
-        dismiss()
-        findNavController().navigate(
-            R.id.action_todoDetail_to_addEditTodo,
-            bundleOf(AddEditTodoDialog.ARG_TODO_ID to todoId)
-        )
-    }
-
-    override fun closeDialog() {
-        dismiss()
-    }
-
-    override fun showLoading() {
-        // Optional: show loading state
-    }
-
-    override fun hideLoading() {
-        // Optional: hide loading state
-    }
-
-    override fun showError(message: String) {
-        Snackbar.make(binding.root, message, Snackbar.LENGTH_SHORT).show()
-    }
-
     override fun onDestroyView() {
-        presenter.detach()
         super.onDestroyView()
         _binding = null
     }

@@ -7,45 +7,37 @@ import androidx.room.Query
 import androidx.room.Update
 import com.lutukai.simpletodoapp.data.local.entity.TodoEntity
 import com.lutukai.simpletodoapp.data.local.entity.TodoEntity.Companion.TODO_TABLE_NAME
-import io.reactivex.rxjava3.core.Completable
-import io.reactivex.rxjava3.core.Flowable
-import io.reactivex.rxjava3.core.Maybe
-import io.reactivex.rxjava3.core.Single
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TodoDao {
 
-    // Returns Flowable - emits new list every time the table changes
+    // Returns Flow - emits new list every time the table changes
     // This is the "reactive list" - automatically updates your UI
     @Query("SELECT * FROM $TODO_TABLE_NAME ORDER BY createdAt DESC")
-    fun getAllTodos(): Flowable<List<TodoEntity>>
+    fun getAllTodos(): Flow<List<TodoEntity>>
 
-    // Returns Maybe - the todo might not exist
-    // Emits the item if found, completes empty if not
+    // Returns nullable - the todo might not exist
     @Query("SELECT * FROM $TODO_TABLE_NAME WHERE id = :id")
-    fun getTodoById(id: Long): Maybe<TodoEntity>
+    suspend fun getTodoById(id: Long): TodoEntity?
 
-    // Alternative: Single throws an error if not found
-    @Query("SELECT * FROM $TODO_TABLE_NAME WHERE id = :id")
-    fun getTodoByIdOrError(id: Long): Single<TodoEntity>
-
-    // Returns Completable - we only care about success/failure
+    // Insert todo
     @Insert
-    fun insertTodo(todo: TodoEntity): Completable
+    suspend fun insertTodo(todo: TodoEntity)
 
-    // Returns Single<Long> - get the inserted row ID
+    // Insert and get the inserted row ID
     @Insert
-    fun insertTodoWithId(todo: TodoEntity): Single<Long>
+    suspend fun insertTodoWithId(todo: TodoEntity): Long
 
-    // Update returns Completable
+    // Update todo
     @Update
-    fun updateTodo(todo: TodoEntity): Completable
+    suspend fun updateTodo(todo: TodoEntity)
 
-    // Delete returns Completable
+    // Delete todo
     @Delete
-    fun deleteTodo(todo: TodoEntity): Completable
+    suspend fun deleteTodo(todo: TodoEntity)
 
-    // You can also return the number of affected rows
+    // Delete completed todos and return the number of affected rows
     @Query("DELETE FROM $TODO_TABLE_NAME WHERE isCompleted = 1")
-    fun deleteCompletedTodos(): Single<Int>
+    suspend fun deleteCompletedTodos(): Int
 }

@@ -8,29 +8,31 @@ import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.transition.TransitionManager
 import com.google.android.material.snackbar.Snackbar
 import com.lutukai.simpletodoapp.R
-import com.lutukai.simpletodoapp.data.local.entity.TodoEntity
+import com.lutukai.simpletodoapp.domain.models.Todo
 import com.lutukai.simpletodoapp.databinding.FragmentTodoListBinding
-import com.lutukai.simpletodoapp.ui.addedittodo.AddEditTodoDialog
 import com.lutukai.simpletodoapp.ui.tododetail.TodoDetailDialog
 import com.lutukai.simpletodoapp.util.setEmptyState
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
-class TodoListFragment : Fragment(R.layout.fragment_todo_list), TodoListContract.View {
+class TodoListFragment : Fragment(R.layout.fragment_todo_list) {
 
     private var _binding: FragmentTodoListBinding? = null
     private val binding get() = _binding!!
 
-    @Inject
-    lateinit var presenter: TodoListPresenter
+    private val viewModel: TodoListViewModel by viewModels()
 
     private lateinit var adapter: TodoAdapter
-    private var allTodos: List<TodoEntity> = emptyList()
+    private var allTodos: List<Todo> = emptyList()
     private var currentFilter: TodoFilter = TodoFilter.ALL
     private var searchQuery: String = ""
 
@@ -46,23 +48,21 @@ class TodoListFragment : Fragment(R.layout.fragment_todo_list), TodoListContract
         setupTabs()
         setupSearch()
         setupFab()
-
-        presenter.attach(this)
-        presenter.loadTodos()
+        observeViewModel()
     }
 
     private fun setupAdapter() {
         adapter = TodoAdapter(object : TodoAdapter.TodoItemListener {
-            override fun onToggleComplete(todo: TodoEntity) {
-                presenter.toggleComplete(todo)
+            override fun onToggleComplete(todo: Todo) {
+                viewModel.toggleComplete(todo)
             }
 
-            override fun onDelete(todo: TodoEntity) {
-                presenter.deleteTodo(todo)
+            override fun onDelete(todo: Todo) {
+                viewModel.deleteTodo(todo)
             }
 
-            override fun onItemClick(todo: TodoEntity) {
-                presenter.openTodoDetail(todo)
+            override fun onItemClick(todo: Todo) {
+                viewModel.openTodoDetail(todo)
             }
         })
         binding.rvTodos.adapter = adapter
@@ -119,7 +119,53 @@ class TodoListFragment : Fragment(R.layout.fragment_todo_list), TodoListContract
 
     private fun setupFab() {
         binding.fabAddTodo.setOnClickListener {
-            presenter.addNewTodo()
+            viewModel.addNewTodo()
+        }
+    }
+
+    private fun observeViewModel() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.uiState.collect { state ->
+                        binding.progressBar.isVisible = state.isLoading
+
+                        if (state.error != null) {
+                            Snackbar.make(binding.root, state.error, Snackbar.LENGTH_SHORT).show()
+                        }
+
+                        allTodos = state.todos
+                        applyFilters()
+                    }
+                }
+
+                launch {
+                    viewModel.events.collect { event ->
+                        when (event) {
+                            is TodoListEvent.NavigateToAddTodo -> {
+                                findNavController().navigate(R.id.action_todoList_to_addEditTodo)
+                            }
+                            is TodoListEvent.NavigateToDetail -> {
+                                findNavController().navigate(
+                                    R.id.action_todoList_to_todoDetail,
+                                    bundleOf(TodoDetailDialog.ARG_TODO_ID to event.todoId)
+                                )
+                            }
+                            is TodoListEvent.ShowSnackbar -> {
+                                val snackbar = Snackbar.make(
+                                    binding.root,
+                                    event.message,
+                                    Snackbar.LENGTH_LONG
+                                )
+                                if (event.actionLabel != null && event.action != null) {
+                                    snackbar.setAction(event.actionLabel) { event.action.invoke() }
+                                }
+                                snackbar.show()
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -142,7 +188,7 @@ class TodoListFragment : Fragment(R.layout.fragment_todo_list), TodoListContract
         updateList(filtered)
     }
 
-    private fun updateList(todos: List<TodoEntity>) {
+    private fun updateList(todos: List<Todo>) {
         adapter.submitList(todos)
 
         val isEmpty = todos.isEmpty()
@@ -155,49 +201,7 @@ class TodoListFragment : Fragment(R.layout.fragment_todo_list), TodoListContract
     }
 
     override fun onDestroyView() {
-        presenter.detach()
         super.onDestroyView()
         _binding = null
-    }
-
-    override fun showTodos(todos: List<TodoEntity>) {
-        allTodos = todos
-        applyFilters()
-    }
-
-    override fun showEmpty() {
-        allTodos = emptyList()
-        updateList(emptyList())
-    }
-
-    override fun showTodoDeleted(todo: TodoEntity) {
-        Snackbar.make(binding.root, "Task deleted", Snackbar.LENGTH_LONG)
-            .setAction("Undo") {
-                presenter.undoDelete(todo)
-            }
-            .show()
-    }
-
-    override fun navigateToAddTodo() {
-        findNavController().navigate(R.id.action_todoList_to_addEditTodo)
-    }
-
-    override fun navigateToTodoDetail(todoId: Long) {
-        findNavController().navigate(
-            R.id.action_todoList_to_todoDetail,
-            bundleOf(TodoDetailDialog.ARG_TODO_ID to todoId)
-        )
-    }
-
-    override fun showLoading() {
-        binding.progressBar.isVisible = true
-    }
-
-    override fun hideLoading() {
-        binding.progressBar.isVisible = false
-    }
-
-    override fun showError(message: String) {
-        Snackbar.make(binding.root, message, Snackbar.LENGTH_SHORT).show()
     }
 }

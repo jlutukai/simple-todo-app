@@ -1,18 +1,18 @@
 package com.lutukai.simpletodoapp.di
 
-import com.lutukai.simpletodoapp.util.schedulerprovider.AppSchedulerProvider
-import com.lutukai.simpletodoapp.util.schedulerprovider.SchedulerProvider
+import com.lutukai.simpletodoapp.data.repository.TodoRepositoryImpl
+import com.lutukai.simpletodoapp.domain.repository.TodoRepository
+import dagger.Binds
 import dagger.Module
-import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-object RepositoryModule {
+abstract class RepositoryModule {
 
-    @Provides
+    @Binds
     @Singleton
-    fun provideSchedulerProvider(): SchedulerProvider = AppSchedulerProvider()
+    abstract fun bindTodoRepository(impl: TodoRepositoryImpl): TodoRepository
 }

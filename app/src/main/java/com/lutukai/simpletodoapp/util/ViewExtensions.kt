@@ -4,9 +4,6 @@ import android.view.View
 import android.view.ViewStub
 import androidx.core.view.isVisible
 import com.lutukai.simpletodoapp.databinding.LayoutEmptyStateBinding
-import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
-import io.reactivex.rxjava3.core.Observable
-import java.util.concurrent.TimeUnit
 
 fun ViewStub.setEmptyState(dataIsEmpty: Boolean, title: String, desc: String) {
     if (this.parent != null) {
@@ -41,11 +38,12 @@ fun View.setDebouncedClickListener(
     debounceMs: Long = 300L,
     action: (View) -> Unit
 ) {
-    Observable.create<View> { emitter ->
-        setOnClickListener { emitter.onNext(it) }
-        emitter.setCancellable { setOnClickListener(null) }
+    var lastClickTime = 0L
+    setOnClickListener { view ->
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastClickTime >= debounceMs) {
+            lastClickTime = currentTime
+            action(view)
+        }
     }
-        .throttleFirst(debounceMs, TimeUnit.MILLISECONDS)
-        .observeOn(AndroidSchedulers.mainThread())
-        .subscribe { action(it) }
 }

@@ -101,14 +101,22 @@ dependencies {
     testImplementation(libs.hilt.android.testing)
     kspTest(libs.hilt.android.compiler)
 
+    // Coroutines testing
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.turbine)
+
     // Room
     implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.room.rxjava3)
+    implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
-    // RxJava 3
-    implementation(libs.rxjava)
-    implementation(libs.rxandroid)
+    // Coroutines
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.coroutines.android)
+
+    // Lifecycle & ViewModel
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
 
     //Hilt
     implementation(libs.hilt.android)
