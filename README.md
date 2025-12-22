@@ -333,5 +333,3 @@ SimpleTodoApp/
 ```
 
 ---
-
-
