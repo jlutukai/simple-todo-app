@@ -1,5 +1,8 @@
 package com.lutukai.simpletodoapp.domain.models
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class Todo(
     val id: Long?,
     val title: String,

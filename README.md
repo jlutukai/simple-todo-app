@@ -1,21 +1,21 @@
 # SimpleTodoApp
 
-A simple yet well-architected Android Todo application demonstrating **MVVM (Model-View-ViewModel)** architecture with **Kotlin Coroutines & Flow**, **Room Database**, and **Hilt Dependency Injection**.
+A simple yet well-architected Android Todo application demonstrating **MVI (Model-View-Intent)** architecture with **Jetpack Compose**, **Kotlin Coroutines & Flow**, **Room Database**, and **Hilt Dependency Injection**.
 
 ## Features
 
 - **Todo Management** - Create, read, update, and delete todos
 - **Mark Complete** - Toggle todos between complete and incomplete states
-- **Search** - Filter todos by title
+- **Search** - Filter todos by title or description
 - **Tab Filtering** - View all todos or only completed ones
 - **Undo Delete** - Restore accidentally deleted todos via Snackbar
-- **Bottom Sheet Dialogs** - Modern UI for adding, editing, and viewing todos
+- **Modal Bottom Sheets** - Modern Compose UI for adding, editing, and viewing todos
 
 ---
 
 ## Architecture
 
-This project follows the **MVVM (Model-View-ViewModel)** architectural pattern with reactive programming using **Kotlin Coroutines and Flow**.
+This project follows the **MVI (Model-View-Intent)** architectural pattern with **Jetpack Compose** for UI and reactive programming using **Kotlin Coroutines and Flow**.
 
 ### Project Structure
 
@@ -29,19 +29,48 @@ com.lutukai.simpletodoapp/
 │   ├── mapper/            → ToDomain.kt, ToEntity.kt (Entity ↔ Domain mapping)
 │   └── repository/        → TodoRepositoryImpl (Repository implementation)
 ├── di/
+│   ├── AppModule          → App-wide providers
 │   ├── DatabaseModule     → Room & DAO providers
 │   └── RepositoryModule   → Repository binding
 ├── domain/
 │   ├── models/            → Todo (Domain model)
 │   └── repository/        → TodoRepository (Repository interface)
+├── navigation/
+│   ├── NavRoutes.kt       → Type-safe navigation routes
+│   └── TodoNavHost.kt     → Navigation host setup
 ├── ui/
-│   ├── todolist/          → TodoListFragment, ViewModel, UiState, Adapter
-│   ├── addedittodo/       → AddEditTodoDialog, ViewModel, UiState
-│   └── tododetail/        → TodoDetailDialog, ViewModel, UiState
+│   ├── mvi/               → MVI framework (MviContract, MviViewModel, MviExtensions)
+│   ├── theme/             → Material 3 theme (Color.kt, Theme.kt)
+│   ├── preview/           → Preview utilities (DevicePreviews.kt)
+│   ├── util/              → UI utilities (TestTags.kt, ModifierExtensions.kt)
+│   ├── todolist/          → TodoListScreen, MviViewModel, Contract, TodoItem
+│   ├── addedittodo/       → AddEditTodoScreen, MviViewModel, Contract
+│   └── tododetail/        → TodoDetailScreen, MviViewModel, Contract
 ├── util/
-│   └── ViewExtensions.kt  → UI utility extensions
-├── MainActivity.kt
+│   └── Constants.kt       → App constants
+├── MainActivity.kt        → Entry point with Compose setup
 └── TodoApp.kt             → @HiltAndroidApp
+```
+
+### MVI Pattern
+
+The app implements a custom MVI framework with three core components:
+
+```kotlin
+// Contract defines the screen's state, intents, and side effects
+interface UiState           // Immutable screen state
+interface UiIntent          // User actions/events
+interface SideEffect        // One-time events (navigation, snackbars)
+
+// Base ViewModel provides the MVI infrastructure
+abstract class MviViewModel<State, Intent, Effect>(initialState: State) {
+    val uiState: StateFlow<State>           // Observable state
+    val effect: Flow<Effect>                // One-time effects
+
+    fun onIntent(intent: Intent)            // Handle user actions
+    protected fun updateState(reduce: State.() -> State)  // Pure state reducer
+    protected suspend fun sendEffect(effect: Effect)      // Emit side effects
+}
 ```
 
 ### Data Flow
@@ -53,18 +82,19 @@ com.lutukai.simpletodoapp/
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                    VIEW (Fragment/Dialog)                        │
+│                   VIEW (Compose Screen)                          │
 │  • Captures user input                                           │
-│  • Calls ViewModel methods                                       │
-│  • Observes StateFlow for UI state                               │
-│  • Collects Events for one-time actions                          │
+│  • Calls viewModel.onIntent(Intent)                              │
+│  • Collects uiState via collectState()                           │
+│  • Observes effects via ObserveAsEvents()                        │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                        VIEWMODEL                                 │
-│  • Holds UI state (MutableStateFlow → StateFlow)                 │
-│  • Emits one-time events (Channel → Flow)                        │
+│                      MVI VIEWMODEL                               │
+│  • Receives Intent via onIntent()                                │
+│  • Updates state via updateState { copy(...) }                   │
+│  • Emits side effects via sendEffect()                           │
 │  • Launches coroutines in viewModelScope                         │
 │  • Calls repository suspend functions                            │
 └─────────────────────────────────────────────────────────────────┘
@@ -94,45 +124,140 @@ com.lutukai.simpletodoapp/
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### StateFlow + Channel Pattern
+### MVI Contract Example
 
-The app uses StateFlow for UI state and Channel for one-time events:
+Each screen defines its contract with State, Intent, and SideEffect:
 
 ```kotlin
-// UiState - represents screen state
-data class TodoListUiState(
+// State - immutable representation of screen
+@Immutable
+data class TodoListState(
     val todos: List<Todo> = emptyList(),
+    val filteredTodos: List<Todo> = emptyList(),
     val isLoading: Boolean = false,
-    val error: String? = null
-)
+    val error: String? = null,
+    val searchQuery: String = "",
+    val filter: TodoFilter = TodoFilter.ALL
+) : UiState
 
-// Events - one-time actions
-sealed class TodoListEvent {
-    data class ShowSnackbar(val message: String, val todo: Todo) : TodoListEvent()
-    data class NavigateToDetail(val todoId: Long) : TodoListEvent()
-    data object NavigateToAddTodo : TodoListEvent()
+// Intent - user actions
+sealed interface TodoListIntent : UiIntent {
+    data object LoadTodos : TodoListIntent
+    data class UpdateSearchQuery(val query: String) : TodoListIntent
+    data class ToggleComplete(val todo: Todo) : TodoListIntent
+    data class DeleteTodo(val todo: Todo) : TodoListIntent
+    data class UndoDelete(val todo: Todo) : TodoListIntent
+    data class OpenTodoDetail(val todoId: Long) : TodoListIntent
+    data object AddNewTodo : TodoListIntent
 }
 
-// ViewModel exposes state and events
-class TodoListViewModel @Inject constructor(...) : ViewModel() {
-    private val _uiState = MutableStateFlow(TodoListUiState())
-    val uiState: StateFlow<TodoListUiState> = _uiState.asStateFlow()
-
-    private val _events = Channel<TodoListEvent>(Channel.BUFFERED)
-    val events = _events.receiveAsFlow()
+// SideEffect - one-time events
+sealed interface TodoListSideEffect : SideEffect {
+    data class ShowSnackbar(val message: String, val todo: Todo? = null) : TodoListSideEffect
+    data class NavigateToDetail(val todoId: Long) : TodoListSideEffect
+    data object NavigateToAddTodo : TodoListSideEffect
 }
 ```
+
+### MVI Extensions Usage
+
+The `MviExtensions.kt` file provides Compose utilities for working with the MVI pattern:
+
+#### `collectState()` - Lifecycle-Aware State Collection
+
+```kotlin
+@Composable
+fun TodoListScreen(viewModel: TodoListMviViewModel = hiltViewModel()) {
+    val state = viewModel.collectState()  // Pauses when app is in background
+
+    TodoListContent(
+        todos = state.filteredTodos,
+        isLoading = state.isLoading
+    )
+}
+```
+
+#### `rememberOnIntent()` - Stable Intent Handler
+
+```kotlin
+@Composable
+fun TodoListScreen(viewModel: TodoListMviViewModel = hiltViewModel()) {
+    val state = viewModel.collectState()
+    val onIntent = viewModel.rememberOnIntent()  // Stable lambda, won't cause recomposition
+
+    TodoListContent(state = state, onIntent = onIntent)
+}
+
+@Composable
+fun TodoListContent(state: TodoListState, onIntent: (TodoListIntent) -> Unit) {
+    Button(onClick = { onIntent(TodoListIntent.AddNewTodo) }) {
+        Text("Add Todo")
+    }
+}
+```
+
+#### `ObserveAsEvents()` - Side Effect Handling
+
+```kotlin
+@Composable
+fun TodoListScreen(
+    viewModel: TodoListMviViewModel = hiltViewModel(),
+    onNavigateToDetail: (Long) -> Unit,
+    onNavigateToAdd: () -> Unit
+) {
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Observe one-time side effects (lifecycle-aware)
+    ObserveAsEvents(flow = viewModel.effect) { effect ->
+        when (effect) {
+            is TodoListSideEffect.NavigateToDetail -> onNavigateToDetail(effect.todoId)
+            is TodoListSideEffect.NavigateToAddTodo -> onNavigateToAdd()
+            is TodoListSideEffect.ShowSnackbar -> {
+                val result = snackbarHostState.showSnackbar(
+                    message = effect.message,
+                    actionLabel = effect.todo?.let { "Undo" }
+                )
+                if (result == SnackbarResult.ActionPerformed) {
+                    effect.todo?.let { onIntent(TodoListIntent.UndoDelete(it)) }
+                }
+            }
+        }
+    }
+}
+```
+
+#### `rememberEventChannel()` - Buffered Event Dispatch
+
+```kotlin
+@Composable
+fun SearchBar(onSearch: (String) -> Unit) {
+    val debouncedSearch = rememberEventChannel(onSearch)  // Buffers rapid inputs
+
+    TextField(onValueChange = { query -> debouncedSearch(query) })
+}
+```
+
+#### Extensions Summary
+
+| Function | Purpose | Prevents |
+|----------|---------|----------|
+| `collectState()` | Lifecycle-aware state collection | Memory leaks, background updates |
+| `rememberOnIntent()` | Stable intent handler | Unnecessary recompositions |
+| `rememberEventChannel()` | Buffered event dispatch | Rapid duplicate events |
+| `ObserveAsEvents()` | One-time effect handling | Event re-delivery on config change |
 
 ### Key Architectural Decisions
 
 | Decision | Rationale |
 |----------|-----------|
-| **MVVM with StateFlow** | Lifecycle-aware state management with single source of truth |
+| **MVI with StateFlow** | Unidirectional data flow with single source of truth |
+| **Jetpack Compose** | Declarative UI with better recomposition control |
+| **Type-Safe Navigation** | Compile-time route safety using Kotlin Serialization |
 | **Kotlin Coroutines + Flow** | Modern async handling with structured concurrency |
-| **Repository Pattern** | Clean abstraction over data sources, easier to test and extend |
+| **Repository Pattern** | Clean abstraction over data sources, easier to test |
 | **Domain Layer** | Separates business models from data layer entities |
 | **Hilt DI** | Compile-time dependency injection with less boilerplate |
-| **Channel for Events** | Prevents re-delivery of one-time events on configuration change |
+| **Channel for Effects** | Prevents re-delivery of one-time events on config change |
 
 ---
 
@@ -142,21 +267,23 @@ class TodoListViewModel @Inject constructor(...) : ViewModel() {
 
 | Category | Library | Version | Purpose |
 |----------|---------|---------|---------|
+| Compose | compose-bom | 2024.12.01 | Compose Bill of Materials |
+| Compose | activity-compose | 1.9.3 | Compose Activity integration |
+| Compose | navigation-compose | 2.8.5 | Type-safe Compose navigation |
+| Compose | hilt-navigation-compose | 1.2.0 | Hilt integration for Compose |
+| Compose | lifecycle-runtime-compose | 2.8.7 | Lifecycle-aware Compose utilities |
 | Core Android | androidx-core-ktx | 1.17.0 | Kotlin extensions for Android APIs |
 | Core Android | androidx-appcompat | 1.7.1 | Backward compatibility support |
 | Core Android | androidx-activity | 1.12.1 | Activity lifecycle management |
-| Core Android | androidx-constraintlayout | 2.2.1 | Flexible UI layout system |
-| UI | material | 1.13.0 | Material Design 3 components |
+| UI | material3 | (via BOM) | Material Design 3 components |
 | Database | room-runtime | 2.8.4 | SQLite abstraction layer |
 | Database | room-ktx | 2.8.4 | Room + Coroutines/Flow integration |
 | Async | kotlinx-coroutines-core | 1.9.0 | Kotlin coroutines |
 | Async | kotlinx-coroutines-android | 1.9.0 | Android main thread dispatcher |
 | Lifecycle | lifecycle-viewmodel-ktx | 2.8.7 | ViewModel with coroutine support |
-| Lifecycle | lifecycle-runtime-ktx | 2.8.7 | Lifecycle-aware coroutine scopes |
 | DI | hilt-android | 2.57.2 | Dependency injection framework |
-| Navigation | navigation-fragment | 2.9.6 | Fragment-based navigation |
-| Navigation | navigation-ui | 2.9.6 | Navigation UI integration |
-| Compat | desugar_jdk_libs | 2.1.5 | Java 8+ API support on older Android versions |
+| Serialization | kotlinx-serialization | 1.7.3 | Type-safe navigation arguments |
+| Compat | desugar_jdk_libs | 2.1.5 | Java 8+ API support on older Android |
 
 ### Testing Dependencies
 
@@ -168,10 +295,10 @@ class TodoListViewModel @Inject constructor(...) : ViewModel() {
 | turbine | 1.2.0 | Flow testing library |
 | kotlinx-coroutines-test | 1.9.0 | Coroutine testing utilities |
 | robolectric | 4.14.1 | JVM-based Android framework simulation |
-| espresso-core | 3.7.0 | UI testing framework |
+| compose-ui-test-junit4 | (via BOM) | Compose UI testing |
+| compose-ui-test-manifest | (via BOM) | Compose test manifest |
 | room-testing | 2.8.4 | In-memory Room database for tests |
 | hilt-android-testing | 2.57.2 | Hilt support for tests |
-| fragment-testing | 1.8.5 | Fragment testing utilities |
 | androidx-test-core | 1.6.1 | Core test utilities |
 | androidx-test-runner | 1.6.2 | AndroidJUnit test runner |
 
@@ -185,6 +312,7 @@ class TodoListViewModel @Inject constructor(...) : ViewModel() {
 | Java/Kotlin | JVM 17 |
 | Build System | Gradle with Kotlin DSL |
 | Annotation Processor | KSP (Kotlin Symbol Processing) |
+| Compose Compiler | Kotlin 2.0+ integrated |
 
 ---
 
@@ -194,11 +322,11 @@ class TodoListViewModel @Inject constructor(...) : ViewModel() {
 
 ```
               ┌───────────────┐
-             │   UI Tests    │  ← Espresso (Instrumented)
+             │   UI Tests    │  ← Compose UI Tests (Instrumented)
             ┌┴───────────────┴┐
            │   Integration    │  ← Room DAO, Robolectric
           ┌┴─────────────────┴┐
-         │     Unit Tests     │  ← ViewModel, Repository, Entity
+         │     Unit Tests     │  ← MviViewModel, Repository
         └─────────────────────┘
 ```
 
@@ -208,29 +336,32 @@ class TodoListViewModel @Inject constructor(...) : ViewModel() {
 |-----------|---------------|
 | `TodoRepositoryTest.kt` | Repository delegation to DAO, mapping, error handling |
 | `TodoEntityTest.kt` | Entity data class defaults, copy function, equality/hashCode |
-| `TodoListViewModelTest.kt` | List loading, filtering, delete/undo, state emissions |
-| `AddEditTodoViewModelTest.kt` | Save/load todo operations, form validation |
-| `TodoDetailViewModelTest.kt` | Detail view loading, toggle complete functionality |
-| `TodoAdapterTest.kt` | DiffUtil `areItemsTheSame` and `areContentsTheSame` logic |
-| `TodoListFragmentTest.kt` | Fragment UI visibility with Robolectric |
+| `TodoListMviViewModelTest.kt` | Intent handling, state mutations, side effects |
+| `AddEditTodoMviViewModelTest.kt` | Save/load todo operations, form validation |
+| `TodoDetailMviViewModelTest.kt` | Detail view loading, toggle complete |
+| `TodoListContentTest.kt` | Compose UI rendering, state-driven updates |
+| `AddEditTodoContentTest.kt` | Form UI, validation display |
+| `TodoDetailContentTest.kt` | Detail screen rendering |
+| `TodoItemComposeTest.kt` | Individual todo item composable |
 
 ### Instrumented Tests (`app/src/androidTest`)
 
 | Test File | Coverage Area |
 |-----------|---------------|
-| `TodoDaoTest.kt` | CRUD operations with in-memory Room database, Flow emissions on data changes |
-| `MigrationTest.kt` | Database schema validation, column existence verification |
+| `TodoDaoTest.kt` | CRUD operations with in-memory Room database |
+| `MigrationTest.kt` | Database schema validation |
 
 ### Testing Patterns
 
 | Pattern | Description |
 |---------|-------------|
-| **MockK** | Kotlin-friendly mocking with `relaxed = true` for flexible test setup |
-| **Turbine** | Flow testing with `test {}` block for collecting and asserting emissions |
-| **runTest** | Coroutine test dispatcher for deterministic async testing |
-| **In-memory Room DB** | Real database operations without persistence for integration tests |
-| **HiltTestRunner** | Custom test runner for dependency injection in tests |
-| **launchFragmentInHiltContainer** | Custom extension for fragment testing with Hilt |
+| **MockK** | Kotlin-friendly mocking with `relaxed = true` |
+| **Turbine** | Flow testing with `test {}` block |
+| **runTest** | Coroutine test dispatcher for deterministic testing |
+| **ComposeTestRule** | Compose UI testing with semantics |
+| **TestTags** | Centralized test identifiers for reliable queries |
+| **TestTodoFactory** | Factory for creating consistent test data |
+| **Robolectric** | JVM-based UI testing (faster than instrumented) |
 
 ### Running Tests
 
@@ -245,7 +376,7 @@ class TodoListViewModel @Inject constructor(...) : ViewModel() {
 ./gradlew connectedAndroidTest
 
 # Run specific test class
-./gradlew test --tests "com.lutukai.simpletodoapp.data.repository.TodoRepositoryTest"
+./gradlew test --tests "com.lutukai.simpletodoapp.ui.todolist.TodoListMviViewModelTest"
 ```
 
 ---
@@ -301,26 +432,43 @@ SimpleTodoApp/
 │   │   │   │   │   │   └── ToEntity.kt
 │   │   │   │   │   └── repository/TodoRepositoryImpl.kt
 │   │   │   │   ├── di/
+│   │   │   │   │   ├── AppModule.kt
 │   │   │   │   │   ├── DatabaseModule.kt
 │   │   │   │   │   └── RepositoryModule.kt
 │   │   │   │   ├── domain/
 │   │   │   │   │   ├── models/Todo.kt
 │   │   │   │   │   └── repository/TodoRepository.kt
+│   │   │   │   ├── navigation/
+│   │   │   │   │   ├── NavRoutes.kt
+│   │   │   │   │   └── TodoNavHost.kt
 │   │   │   │   ├── ui/
+│   │   │   │   │   ├── mvi/
+│   │   │   │   │   │   ├── MviContract.kt
+│   │   │   │   │   │   ├── MviViewModel.kt
+│   │   │   │   │   │   └── MviExtensions.kt
+│   │   │   │   │   ├── theme/
+│   │   │   │   │   │   ├── Color.kt
+│   │   │   │   │   │   └── Theme.kt
+│   │   │   │   │   ├── preview/
+│   │   │   │   │   │   └── DevicePreviews.kt
+│   │   │   │   │   ├── util/
+│   │   │   │   │   │   ├── TestTags.kt
+│   │   │   │   │   │   └── ModifierExtensions.kt
 │   │   │   │   │   ├── todolist/
-│   │   │   │   │   │   ├── TodoAdapter.kt
-│   │   │   │   │   │   ├── TodoListFragment.kt
-│   │   │   │   │   │   ├── TodoListViewModel.kt
-│   │   │   │   │   │   └── TodoListUiState.kt
+│   │   │   │   │   │   ├── TodoListContract.kt
+│   │   │   │   │   │   ├── TodoListMviViewModel.kt
+│   │   │   │   │   │   ├── TodoListScreen.kt
+│   │   │   │   │   │   └── TodoItem.kt
 │   │   │   │   │   ├── addedittodo/
-│   │   │   │   │   │   ├── AddEditTodoDialog.kt
-│   │   │   │   │   │   ├── AddEditTodoViewModel.kt
-│   │   │   │   │   │   └── AddEditTodoUiState.kt
+│   │   │   │   │   │   ├── AddEditTodoContract.kt
+│   │   │   │   │   │   ├── AddEditTodoMviViewModel.kt
+│   │   │   │   │   │   └── AddEditTodoScreen.kt
 │   │   │   │   │   └── tododetail/
-│   │   │   │   │       ├── TodoDetailDialog.kt
-│   │   │   │   │       ├── TodoDetailViewModel.kt
-│   │   │   │   │       └── TodoDetailUiState.kt
-│   │   │   │   ├── util/ViewExtensions.kt
+│   │   │   │   │       ├── TodoDetailContract.kt
+│   │   │   │   │       ├── TodoDetailMviViewModel.kt
+│   │   │   │   │       └── TodoDetailScreen.kt
+│   │   │   │   ├── util/
+│   │   │   │   │   └── Constants.kt
 │   │   │   │   ├── MainActivity.kt
 │   │   │   │   └── TodoApp.kt
 │   │   │   └── res/
