@@ -3,7 +3,10 @@ package com.lutukai.simpletodoapp.ui.todolist
 import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import com.lutukai.simpletodoapp.domain.models.Todo
-import com.lutukai.simpletodoapp.domain.repository.TodoRepository
+import com.lutukai.simpletodoapp.domain.usecases.DeleteTodoUseCase
+import com.lutukai.simpletodoapp.domain.usecases.GetAllTodosUseCase
+import com.lutukai.simpletodoapp.domain.usecases.InsertTodoUseCase
+import com.lutukai.simpletodoapp.domain.usecases.ToggleTodoCompleteUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -23,19 +26,32 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class TodoListMviViewModelTest {
 
-    private lateinit var repository: TodoRepository
+    private lateinit var getAllTodosUseCase: GetAllTodosUseCase
+    private lateinit var toggleTodoCompleteUseCase: ToggleTodoCompleteUseCase
+    private lateinit var deleteTodoUseCase: DeleteTodoUseCase
+    private lateinit var insertTodoUseCase: InsertTodoUseCase
     private val testDispatcher = StandardTestDispatcher()
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        repository = mockk(relaxed = true)
+        getAllTodosUseCase = mockk(relaxed = true)
+        toggleTodoCompleteUseCase = mockk(relaxed = true)
+        deleteTodoUseCase = mockk(relaxed = true)
+        insertTodoUseCase = mockk(relaxed = true)
     }
 
     @After
     fun tearDown() {
         Dispatchers.resetMain()
     }
+
+    private fun createViewModel() = TodoListMviViewModel(
+        getAllTodosUseCase,
+        toggleTodoCompleteUseCase,
+        deleteTodoUseCase,
+        insertTodoUseCase
+    )
 
     private fun createTodo(
         id: Long = 1L,
@@ -53,9 +69,9 @@ class TodoListMviViewModelTest {
     @Test
     fun `init loads todos on creation`() = runTest {
         val todos = listOf(createTodo(1, "Todo 1"), createTodo(2, "Todo 2"))
-        every { repository.getAllTodos() } returns flowOf(todos)
+        every { getAllTodosUseCase() } returns flowOf(todos)
 
-        val viewModel = TodoListMviViewModel(repository)
+        val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertThat(viewModel.state.value.todos).hasSize(2)
@@ -65,9 +81,9 @@ class TodoListMviViewModelTest {
 
     @Test
     fun `loadTodos sets loading to false after completion`() = runTest {
-        every { repository.getAllTodos() } returns flowOf(emptyList())
+        every { getAllTodosUseCase() } returns flowOf(emptyList())
 
-        val viewModel = TodoListMviViewModel(repository)
+        val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertThat(viewModel.state.value.isLoading).isFalse()
@@ -75,9 +91,9 @@ class TodoListMviViewModelTest {
 
     @Test
     fun `loadTodos handles error`() = runTest {
-        every { repository.getAllTodos() } returns flow { throw RuntimeException("Network error") }
+        every { getAllTodosUseCase() } returns flow { throw RuntimeException("Network error") }
 
-        val viewModel = TodoListMviViewModel(repository)
+        val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertThat(viewModel.state.value.error).isEqualTo("Network error")
@@ -86,9 +102,9 @@ class TodoListMviViewModelTest {
 
     @Test
     fun `updateSearchQuery updates state`() = runTest {
-        every { repository.getAllTodos() } returns flowOf(emptyList())
+        every { getAllTodosUseCase() } returns flowOf(emptyList())
 
-        val viewModel = TodoListMviViewModel(repository)
+        val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.onIntent(TodoListIntent.UpdateSearchQuery("test query"))
@@ -99,9 +115,9 @@ class TodoListMviViewModelTest {
 
     @Test
     fun `updateFilter updates state`() = runTest {
-        every { repository.getAllTodos() } returns flowOf(emptyList())
+        every { getAllTodosUseCase() } returns flowOf(emptyList())
 
-        val viewModel = TodoListMviViewModel(repository)
+        val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.onIntent(TodoListIntent.UpdateFilter(TodoListState.TodoFilter.COMPLETED))
@@ -111,31 +127,28 @@ class TodoListMviViewModelTest {
     }
 
     @Test
-    fun `toggleComplete updates todo`() = runTest {
+    fun `toggleComplete calls use case`() = runTest {
         val todo = createTodo(1, "Test", isCompleted = false)
-        every { repository.getAllTodos() } returns flowOf(listOf(todo))
-        coEvery { repository.updateTodo(any()) } returns Unit
+        val toggledTodo = todo.copy(isCompleted = true, completedAt = System.currentTimeMillis())
+        every { getAllTodosUseCase() } returns flowOf(listOf(todo))
+        coEvery { toggleTodoCompleteUseCase(any()) } returns toggledTodo
 
-        val viewModel = TodoListMviViewModel(repository)
+        val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.onIntent(TodoListIntent.ToggleComplete(todo))
         testDispatcher.scheduler.advanceUntilIdle()
 
-        coVerify {
-            repository.updateTodo(match {
-                it.id == 1L && it.isCompleted == true && it.completedAt != null
-            })
-        }
+        coVerify { toggleTodoCompleteUseCase(todo) }
     }
 
     @Test
     fun `toggleComplete handles error and shows snackbar`() = runTest {
         val todo = createTodo(1, "Test")
-        every { repository.getAllTodos() } returns flowOf(listOf(todo))
-        coEvery { repository.updateTodo(any()) } throws RuntimeException("Update failed")
+        every { getAllTodosUseCase() } returns flowOf(listOf(todo))
+        coEvery { toggleTodoCompleteUseCase(any()) } throws RuntimeException("Update failed")
 
-        val viewModel = TodoListMviViewModel(repository)
+        val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.effect.test {
@@ -150,12 +163,12 @@ class TodoListMviViewModelTest {
     }
 
     @Test
-    fun `deleteTodo calls repository and shows snackbar with undo`() = runTest {
+    fun `deleteTodo calls use case and shows snackbar with undo`() = runTest {
         val todo = createTodo(1, "Test")
-        every { repository.getAllTodos() } returns flowOf(listOf(todo))
-        coEvery { repository.deleteTodo(any()) } returns Unit
+        every { getAllTodosUseCase() } returns flowOf(listOf(todo))
+        coEvery { deleteTodoUseCase(any()) } returns Unit
 
-        val viewModel = TodoListMviViewModel(repository)
+        val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.effect.test {
@@ -171,16 +184,16 @@ class TodoListMviViewModelTest {
             cancelAndIgnoreRemainingEvents()
         }
 
-        coVerify { repository.deleteTodo(todo) }
+        coVerify { deleteTodoUseCase(todo) }
     }
 
     @Test
     fun `deleteTodo handles error`() = runTest {
         val todo = createTodo(1, "Test")
-        every { repository.getAllTodos() } returns flowOf(listOf(todo))
-        coEvery { repository.deleteTodo(any()) } throws RuntimeException("Delete failed")
+        every { getAllTodosUseCase() } returns flowOf(listOf(todo))
+        coEvery { deleteTodoUseCase(any()) } throws RuntimeException("Delete failed")
 
-        val viewModel = TodoListMviViewModel(repository)
+        val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.effect.test {
@@ -195,27 +208,27 @@ class TodoListMviViewModelTest {
     }
 
     @Test
-    fun `undoDelete inserts todo back`() = runTest {
+    fun `undoDelete calls insert use case`() = runTest {
         val todo = createTodo(1, "Test")
-        every { repository.getAllTodos() } returns flowOf(emptyList())
-        coEvery { repository.insertTodo(any()) } returns Unit
+        every { getAllTodosUseCase() } returns flowOf(emptyList())
+        coEvery { insertTodoUseCase(any()) } returns Unit
 
-        val viewModel = TodoListMviViewModel(repository)
+        val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.onIntent(TodoListIntent.UndoDelete(todo))
         testDispatcher.scheduler.advanceUntilIdle()
 
-        coVerify { repository.insertTodo(todo) }
+        coVerify { insertTodoUseCase(todo) }
     }
 
     @Test
     fun `undoDelete handles error`() = runTest {
         val todo = createTodo(1, "Test")
-        every { repository.getAllTodos() } returns flowOf(emptyList())
-        coEvery { repository.insertTodo(any()) } throws RuntimeException("Restore failed")
+        every { getAllTodosUseCase() } returns flowOf(emptyList())
+        coEvery { insertTodoUseCase(any()) } throws RuntimeException("Restore failed")
 
-        val viewModel = TodoListMviViewModel(repository)
+        val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.effect.test {
@@ -231,9 +244,9 @@ class TodoListMviViewModelTest {
 
     @Test
     fun `addNewTodo sends navigation effect`() = runTest {
-        every { repository.getAllTodos() } returns flowOf(emptyList())
+        every { getAllTodosUseCase() } returns flowOf(emptyList())
 
-        val viewModel = TodoListMviViewModel(repository)
+        val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.effect.test {
@@ -248,9 +261,9 @@ class TodoListMviViewModelTest {
 
     @Test
     fun `openTodoDetail sends navigation effect with todoId`() = runTest {
-        every { repository.getAllTodos() } returns flowOf(emptyList())
+        every { getAllTodosUseCase() } returns flowOf(emptyList())
 
-        val viewModel = TodoListMviViewModel(repository)
+        val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.effect.test {
@@ -271,9 +284,9 @@ class TodoListMviViewModelTest {
             createTodo(2, "Todo 2", isCompleted = true),
             createTodo(3, "Todo 3", isCompleted = false)
         )
-        every { repository.getAllTodos() } returns flowOf(todos)
+        every { getAllTodosUseCase() } returns flowOf(todos)
 
-        val viewModel = TodoListMviViewModel(repository)
+        val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
         // All filter - shows all
@@ -294,9 +307,9 @@ class TodoListMviViewModelTest {
             createTodo(2, "Call mom"),
             createTodo(3, "Buy flowers")
         )
-        every { repository.getAllTodos() } returns flowOf(todos)
+        every { getAllTodosUseCase() } returns flowOf(todos)
 
-        val viewModel = TodoListMviViewModel(repository)
+        val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.onIntent(TodoListIntent.UpdateSearchQuery("Buy"))

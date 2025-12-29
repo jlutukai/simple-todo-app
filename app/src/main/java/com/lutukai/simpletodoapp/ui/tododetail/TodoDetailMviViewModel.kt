@@ -1,13 +1,15 @@
 package com.lutukai.simpletodoapp.ui.tododetail
 
-import com.lutukai.simpletodoapp.domain.repository.TodoRepository
+import com.lutukai.simpletodoapp.domain.usecases.GetTodoByIdUseCase
+import com.lutukai.simpletodoapp.domain.usecases.UpdateTodoUseCase
 import com.lutukai.simpletodoapp.ui.mvi.MviViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
 @HiltViewModel
 class TodoDetailMviViewModel @Inject constructor(
-    private val repository: TodoRepository
+    private val getTodoByIdUseCase: GetTodoByIdUseCase,
+    private val updateTodoUseCase: UpdateTodoUseCase
 ) : MviViewModel<TodoDetailState, TodoDetailIntent, TodoDetailSideEffect>(
     initialState = TodoDetailState()
 ) {
@@ -30,7 +32,7 @@ class TodoDetailMviViewModel @Inject constructor(
     private suspend fun loadTodo(todoId: Long) {
         updateState { copy(isLoading = true, error = null) }
         try {
-            val todo = repository.getTodoById(todoId)
+            val todo = getTodoByIdUseCase(todoId)
             if (todo != null) {
                 updateState { copy(todo = todo, isLoading = false) }
             } else {
@@ -51,7 +53,7 @@ class TodoDetailMviViewModel @Inject constructor(
                 isCompleted = isCompleted,
                 completedAt = if (isCompleted) System.currentTimeMillis() else null
             )
-            repository.updateTodo(updatedTodo)
+            updateTodoUseCase(updatedTodo)
             updateState { copy(todo = updatedTodo) }
         } catch (e: Exception) {
             sendEffect(TodoDetailSideEffect.ShowError(e.message ?: "Failed to update task"))

@@ -2,7 +2,10 @@ package com.lutukai.simpletodoapp.ui.todolist
 
 import androidx.lifecycle.viewModelScope
 import com.lutukai.simpletodoapp.domain.models.Todo
-import com.lutukai.simpletodoapp.domain.repository.TodoRepository
+import com.lutukai.simpletodoapp.domain.usecases.DeleteTodoUseCase
+import com.lutukai.simpletodoapp.domain.usecases.GetAllTodosUseCase
+import com.lutukai.simpletodoapp.domain.usecases.InsertTodoUseCase
+import com.lutukai.simpletodoapp.domain.usecases.ToggleTodoCompleteUseCase
 import com.lutukai.simpletodoapp.ui.mvi.MviViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.catch
@@ -12,7 +15,10 @@ import javax.inject.Inject
 
 @HiltViewModel
 class TodoListMviViewModel @Inject constructor(
-    private val repository: TodoRepository
+    private val getAllTodosUseCase: GetAllTodosUseCase,
+    private val toggleTodoCompleteUseCase: ToggleTodoCompleteUseCase,
+    private val deleteTodoUseCase: DeleteTodoUseCase,
+    private val insertTodoUseCase: InsertTodoUseCase
 ) : MviViewModel<TodoListState, TodoListIntent, TodoListSideEffect>(
     initialState = TodoListState()
 ) {
@@ -53,7 +59,7 @@ class TodoListMviViewModel @Inject constructor(
 
     private fun loadTodos() {
         viewModelScope.launch {
-            repository.getAllTodos()
+            getAllTodosUseCase()
                 .onStart {
                     updateState { copy(isLoading = true, error = null) }
                 }
@@ -70,13 +76,7 @@ class TodoListMviViewModel @Inject constructor(
 
     private suspend fun toggleComplete(todo: Todo) {
         try {
-            val newCompletedState = !todo.isCompleted
-            repository.updateTodo(
-                todo.copy(
-                    completedAt = if (newCompletedState) System.currentTimeMillis() else null,
-                    isCompleted = newCompletedState
-                )
-            )
+            toggleTodoCompleteUseCase(todo)
         } catch (e: Exception) {
             sendEffect(TodoListSideEffect.ShowSnackbar("Update failed"))
         }
@@ -84,7 +84,7 @@ class TodoListMviViewModel @Inject constructor(
 
     private suspend fun deleteTodo(todo: Todo) {
         try {
-            repository.deleteTodo(todo)
+            deleteTodoUseCase(todo)
             sendEffect(
                 TodoListSideEffect.ShowSnackbar(
                     message = "Task deleted",
@@ -99,7 +99,7 @@ class TodoListMviViewModel @Inject constructor(
 
     private suspend fun undoDelete(todo: Todo) {
         try {
-            repository.insertTodo(todo)
+            insertTodoUseCase(todo)
         } catch (e: Exception) {
             sendEffect(TodoListSideEffect.ShowSnackbar("Restore failed"))
         }

@@ -3,7 +3,8 @@ package com.lutukai.simpletodoapp.ui.tododetail
 import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import com.lutukai.simpletodoapp.domain.models.Todo
-import com.lutukai.simpletodoapp.domain.repository.TodoRepository
+import com.lutukai.simpletodoapp.domain.usecases.GetTodoByIdUseCase
+import com.lutukai.simpletodoapp.domain.usecases.UpdateTodoUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -20,19 +21,26 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class TodoDetailMviViewModelTest {
 
-    private lateinit var repository: TodoRepository
+    private lateinit var getTodoByIdUseCase: GetTodoByIdUseCase
+    private lateinit var updateTodoUseCase: UpdateTodoUseCase
     private val testDispatcher = StandardTestDispatcher()
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        repository = mockk(relaxed = true)
+        getTodoByIdUseCase = mockk(relaxed = true)
+        updateTodoUseCase = mockk(relaxed = true)
     }
 
     @After
     fun tearDown() {
         Dispatchers.resetMain()
     }
+
+    private fun createViewModel() = TodoDetailMviViewModel(
+        getTodoByIdUseCase,
+        updateTodoUseCase
+    )
 
     private fun createTodo(
         id: Long = 1L,
@@ -50,7 +58,7 @@ class TodoDetailMviViewModelTest {
 
     @Test
     fun `initial state has no todo`() = runTest {
-        val viewModel = TodoDetailMviViewModel(repository)
+        val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertThat(viewModel.state.value.todo).isNull()
@@ -61,9 +69,9 @@ class TodoDetailMviViewModelTest {
     @Test
     fun `loadTodo sets state with todo data`() = runTest {
         val todo = createTodo(1L, "Test Title", "Test Desc")
-        coEvery { repository.getTodoById(1L) } returns todo
+        coEvery { getTodoByIdUseCase(1L) } returns todo
 
-        val viewModel = TodoDetailMviViewModel(repository)
+        val viewModel = createViewModel()
         viewModel.onIntent(TodoDetailIntent.LoadTodo(1L))
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -74,9 +82,9 @@ class TodoDetailMviViewModelTest {
 
     @Test
     fun `loadTodo sets loading to false after completion`() = runTest {
-        coEvery { repository.getTodoById(any()) } returns createTodo()
+        coEvery { getTodoByIdUseCase(any()) } returns createTodo()
 
-        val viewModel = TodoDetailMviViewModel(repository)
+        val viewModel = createViewModel()
         viewModel.onIntent(TodoDetailIntent.LoadTodo(1L))
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -85,9 +93,9 @@ class TodoDetailMviViewModelTest {
 
     @Test
     fun `loadTodo handles not found`() = runTest {
-        coEvery { repository.getTodoById(1L) } returns null
+        coEvery { getTodoByIdUseCase(1L) } returns null
 
-        val viewModel = TodoDetailMviViewModel(repository)
+        val viewModel = createViewModel()
 
         viewModel.effect.test {
             viewModel.onIntent(TodoDetailIntent.LoadTodo(1L))
@@ -105,9 +113,9 @@ class TodoDetailMviViewModelTest {
 
     @Test
     fun `loadTodo handles error`() = runTest {
-        coEvery { repository.getTodoById(any()) } throws RuntimeException("Database error")
+        coEvery { getTodoByIdUseCase(any()) } throws RuntimeException("Database error")
 
-        val viewModel = TodoDetailMviViewModel(repository)
+        val viewModel = createViewModel()
 
         viewModel.effect.test {
             viewModel.onIntent(TodoDetailIntent.LoadTodo(1L))
@@ -126,10 +134,10 @@ class TodoDetailMviViewModelTest {
     @Test
     fun `toggleComplete updates todo to completed`() = runTest {
         val todo = createTodo(1L, "Test", isCompleted = false)
-        coEvery { repository.getTodoById(1L) } returns todo
-        coEvery { repository.updateTodo(any()) } returns Unit
+        coEvery { getTodoByIdUseCase(1L) } returns todo
+        coEvery { updateTodoUseCase(any()) } returns Unit
 
-        val viewModel = TodoDetailMviViewModel(repository)
+        val viewModel = createViewModel()
         viewModel.onIntent(TodoDetailIntent.LoadTodo(1L))
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -137,7 +145,7 @@ class TodoDetailMviViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         coVerify {
-            repository.updateTodo(match {
+            updateTodoUseCase(match {
                 it.id == 1L && it.isCompleted && it.completedAt != null
             })
         }
@@ -147,10 +155,10 @@ class TodoDetailMviViewModelTest {
     @Test
     fun `toggleComplete updates todo to not completed`() = runTest {
         val todo = createTodo(1L, "Test", isCompleted = true)
-        coEvery { repository.getTodoById(1L) } returns todo
-        coEvery { repository.updateTodo(any()) } returns Unit
+        coEvery { getTodoByIdUseCase(1L) } returns todo
+        coEvery { updateTodoUseCase(any()) } returns Unit
 
-        val viewModel = TodoDetailMviViewModel(repository)
+        val viewModel = createViewModel()
         viewModel.onIntent(TodoDetailIntent.LoadTodo(1L))
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -158,7 +166,7 @@ class TodoDetailMviViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         coVerify {
-            repository.updateTodo(match {
+            updateTodoUseCase(match {
                 it.id == 1L && !it.isCompleted && it.completedAt == null
             })
         }
@@ -168,10 +176,10 @@ class TodoDetailMviViewModelTest {
     @Test
     fun `toggleComplete handles error`() = runTest {
         val todo = createTodo(1L, "Test")
-        coEvery { repository.getTodoById(1L) } returns todo
-        coEvery { repository.updateTodo(any()) } throws RuntimeException("Update failed")
+        coEvery { getTodoByIdUseCase(1L) } returns todo
+        coEvery { updateTodoUseCase(any()) } throws RuntimeException("Update failed")
 
-        val viewModel = TodoDetailMviViewModel(repository)
+        val viewModel = createViewModel()
         viewModel.onIntent(TodoDetailIntent.LoadTodo(1L))
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -188,21 +196,21 @@ class TodoDetailMviViewModelTest {
 
     @Test
     fun `toggleComplete does nothing when no todo loaded`() = runTest {
-        val viewModel = TodoDetailMviViewModel(repository)
+        val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.onIntent(TodoDetailIntent.ToggleComplete(true))
         testDispatcher.scheduler.advanceUntilIdle()
 
-        coVerify(exactly = 0) { repository.updateTodo(any()) }
+        coVerify(exactly = 0) { updateTodoUseCase(any()) }
     }
 
     @Test
     fun `editClicked sends navigate effect with todoId`() = runTest {
         val todo = createTodo(1L, "Test")
-        coEvery { repository.getTodoById(1L) } returns todo
+        coEvery { getTodoByIdUseCase(1L) } returns todo
 
-        val viewModel = TodoDetailMviViewModel(repository)
+        val viewModel = createViewModel()
         viewModel.onIntent(TodoDetailIntent.LoadTodo(1L))
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -219,7 +227,7 @@ class TodoDetailMviViewModelTest {
 
     @Test
     fun `editClicked does nothing when no todo loaded`() = runTest {
-        val viewModel = TodoDetailMviViewModel(repository)
+        val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.effect.test {
@@ -233,7 +241,7 @@ class TodoDetailMviViewModelTest {
 
     @Test
     fun `dismiss sends dismiss effect`() = runTest {
-        val viewModel = TodoDetailMviViewModel(repository)
+        val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.effect.test {

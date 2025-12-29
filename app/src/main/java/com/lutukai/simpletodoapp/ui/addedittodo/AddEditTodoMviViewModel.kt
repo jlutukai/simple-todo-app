@@ -1,14 +1,16 @@
 package com.lutukai.simpletodoapp.ui.addedittodo
 
 import com.lutukai.simpletodoapp.domain.models.Todo
-import com.lutukai.simpletodoapp.domain.repository.TodoRepository
+import com.lutukai.simpletodoapp.domain.usecases.GetTodoByIdUseCase
+import com.lutukai.simpletodoapp.domain.usecases.InsertTodoUseCase
 import com.lutukai.simpletodoapp.ui.mvi.MviViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
 @HiltViewModel
 class AddEditTodoMviViewModel @Inject constructor(
-    private val repository: TodoRepository
+    private val getTodoByIdUseCase: GetTodoByIdUseCase,
+    private val insertTodoUseCase: InsertTodoUseCase
 ) : MviViewModel<AddEditTodoState, AddEditTodoIntent, AddEditTodoSideEffect>(
     initialState = AddEditTodoState()
 ) {
@@ -27,7 +29,7 @@ class AddEditTodoMviViewModel @Inject constructor(
     private suspend fun loadTodo(todoId: Long) {
         updateState { copy(isLoading = true, error = null, isEditMode = true) }
         try {
-            val todo = repository.getTodoById(todoId)
+            val todo = getTodoByIdUseCase(todoId)
             if (todo != null) {
                 updateState {
                     copy(
@@ -58,7 +60,7 @@ class AddEditTodoMviViewModel @Inject constructor(
 
         updateState { copy(isLoading = true, error = null) }
         try {
-            repository.insertTodo(
+            insertTodoUseCase(
                 Todo(
                     id = state.todo?.id,
                     title = state.title.trim(),

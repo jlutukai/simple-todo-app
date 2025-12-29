@@ -3,7 +3,8 @@ package com.lutukai.simpletodoapp.ui.addedittodo
 import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import com.lutukai.simpletodoapp.domain.models.Todo
-import com.lutukai.simpletodoapp.domain.repository.TodoRepository
+import com.lutukai.simpletodoapp.domain.usecases.GetTodoByIdUseCase
+import com.lutukai.simpletodoapp.domain.usecases.InsertTodoUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -20,19 +21,26 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class AddEditTodoMviViewModelTest {
 
-    private lateinit var repository: TodoRepository
+    private lateinit var getTodoByIdUseCase: GetTodoByIdUseCase
+    private lateinit var insertTodoUseCase: InsertTodoUseCase
     private val testDispatcher = StandardTestDispatcher()
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        repository = mockk(relaxed = true)
+        getTodoByIdUseCase = mockk(relaxed = true)
+        insertTodoUseCase = mockk(relaxed = true)
     }
 
     @After
     fun tearDown() {
         Dispatchers.resetMain()
     }
+
+    private fun createViewModel() = AddEditTodoMviViewModel(
+        getTodoByIdUseCase,
+        insertTodoUseCase
+    )
 
     private fun createTodo(
         id: Long = 1L,
@@ -50,7 +58,7 @@ class AddEditTodoMviViewModelTest {
 
     @Test
     fun `initial state is add mode`() = runTest {
-        val viewModel = AddEditTodoMviViewModel(repository)
+        val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertThat(viewModel.state.value.isEditMode).isFalse()
@@ -63,9 +71,9 @@ class AddEditTodoMviViewModelTest {
     @Test
     fun `loadTodo sets edit mode with data`() = runTest {
         val todo = createTodo(1L, "Test Title", "Test Desc", false)
-        coEvery { repository.getTodoById(1L) } returns todo
+        coEvery { getTodoByIdUseCase(1L) } returns todo
 
-        val viewModel = AddEditTodoMviViewModel(repository)
+        val viewModel = createViewModel()
         viewModel.onIntent(AddEditTodoIntent.LoadTodo(1L))
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -78,9 +86,9 @@ class AddEditTodoMviViewModelTest {
 
     @Test
     fun `loadTodo sets loading to false after completion`() = runTest {
-        coEvery { repository.getTodoById(any()) } returns createTodo()
+        coEvery { getTodoByIdUseCase(any()) } returns createTodo()
 
-        val viewModel = AddEditTodoMviViewModel(repository)
+        val viewModel = createViewModel()
         viewModel.onIntent(AddEditTodoIntent.LoadTodo(1L))
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -89,9 +97,9 @@ class AddEditTodoMviViewModelTest {
 
     @Test
     fun `loadTodo handles not found`() = runTest {
-        coEvery { repository.getTodoById(1L) } returns null
+        coEvery { getTodoByIdUseCase(1L) } returns null
 
-        val viewModel = AddEditTodoMviViewModel(repository)
+        val viewModel = createViewModel()
 
         viewModel.effect.test {
             viewModel.onIntent(AddEditTodoIntent.LoadTodo(1L))
@@ -108,9 +116,9 @@ class AddEditTodoMviViewModelTest {
 
     @Test
     fun `loadTodo handles error`() = runTest {
-        coEvery { repository.getTodoById(any()) } throws RuntimeException("Database error")
+        coEvery { getTodoByIdUseCase(any()) } throws RuntimeException("Database error")
 
-        val viewModel = AddEditTodoMviViewModel(repository)
+        val viewModel = createViewModel()
 
         viewModel.effect.test {
             viewModel.onIntent(AddEditTodoIntent.LoadTodo(1L))
@@ -128,7 +136,7 @@ class AddEditTodoMviViewModelTest {
 
     @Test
     fun `updateTitle updates state`() = runTest {
-        val viewModel = AddEditTodoMviViewModel(repository)
+        val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.onIntent(AddEditTodoIntent.UpdateTitle("New Title"))
@@ -139,7 +147,7 @@ class AddEditTodoMviViewModelTest {
 
     @Test
     fun `updateDescription updates state`() = runTest {
-        val viewModel = AddEditTodoMviViewModel(repository)
+        val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.onIntent(AddEditTodoIntent.UpdateDescription("New Description"))
@@ -150,7 +158,7 @@ class AddEditTodoMviViewModelTest {
 
     @Test
     fun `updateCompleted updates state`() = runTest {
-        val viewModel = AddEditTodoMviViewModel(repository)
+        val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.onIntent(AddEditTodoIntent.UpdateCompleted(true))
@@ -161,9 +169,9 @@ class AddEditTodoMviViewModelTest {
 
     @Test
     fun `saveTodo creates new todo in add mode`() = runTest {
-        coEvery { repository.insertTodo(any()) } returns Unit
+        coEvery { insertTodoUseCase(any()) } returns Unit
 
-        val viewModel = AddEditTodoMviViewModel(repository)
+        val viewModel = createViewModel()
         viewModel.onIntent(AddEditTodoIntent.UpdateTitle("New Task"))
         viewModel.onIntent(AddEditTodoIntent.UpdateDescription("Task Description"))
         testDispatcher.scheduler.advanceUntilIdle()
@@ -178,7 +186,7 @@ class AddEditTodoMviViewModelTest {
         }
 
         coVerify {
-            repository.insertTodo(match {
+            insertTodoUseCase(match {
                 it.id == null && it.title == "New Task" && it.description == "Task Description"
             })
         }
@@ -187,10 +195,10 @@ class AddEditTodoMviViewModelTest {
     @Test
     fun `saveTodo updates existing todo in edit mode`() = runTest {
         val existingTodo = createTodo(1L, "Old Title", "Old Desc")
-        coEvery { repository.getTodoById(1L) } returns existingTodo
-        coEvery { repository.insertTodo(any()) } returns Unit
+        coEvery { getTodoByIdUseCase(1L) } returns existingTodo
+        coEvery { insertTodoUseCase(any()) } returns Unit
 
-        val viewModel = AddEditTodoMviViewModel(repository)
+        val viewModel = createViewModel()
         viewModel.onIntent(AddEditTodoIntent.LoadTodo(1L))
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -207,7 +215,7 @@ class AddEditTodoMviViewModelTest {
         }
 
         coVerify {
-            repository.insertTodo(match {
+            insertTodoUseCase(match {
                 it.id == 1L && it.title == "Updated Title"
             })
         }
@@ -215,7 +223,7 @@ class AddEditTodoMviViewModelTest {
 
     @Test
     fun `saveTodo shows error when title is blank`() = runTest {
-        val viewModel = AddEditTodoMviViewModel(repository)
+        val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.effect.test {
@@ -228,14 +236,14 @@ class AddEditTodoMviViewModelTest {
             cancelAndIgnoreRemainingEvents()
         }
 
-        coVerify(exactly = 0) { repository.insertTodo(any()) }
+        coVerify(exactly = 0) { insertTodoUseCase(any()) }
     }
 
     @Test
     fun `saveTodo handles error`() = runTest {
-        coEvery { repository.insertTodo(any()) } throws RuntimeException("Save failed")
+        coEvery { insertTodoUseCase(any()) } throws RuntimeException("Save failed")
 
-        val viewModel = AddEditTodoMviViewModel(repository)
+        val viewModel = createViewModel()
         viewModel.onIntent(AddEditTodoIntent.UpdateTitle("Test"))
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -255,7 +263,7 @@ class AddEditTodoMviViewModelTest {
 
     @Test
     fun `cancel sends dismiss effect`() = runTest {
-        val viewModel = AddEditTodoMviViewModel(repository)
+        val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.effect.test {
@@ -270,7 +278,7 @@ class AddEditTodoMviViewModelTest {
 
     @Test
     fun `isSaveEnabled returns true when title not blank and not loading`() = runTest {
-        val viewModel = AddEditTodoMviViewModel(repository)
+        val viewModel = createViewModel()
         viewModel.onIntent(AddEditTodoIntent.UpdateTitle("Test"))
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -279,7 +287,7 @@ class AddEditTodoMviViewModelTest {
 
     @Test
     fun `isSaveEnabled returns false when title is blank`() = runTest {
-        val viewModel = AddEditTodoMviViewModel(repository)
+        val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertThat(viewModel.state.value.isSaveEnabled).isFalse()
