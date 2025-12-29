@@ -1,15 +1,66 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
+# Built application files
+*.apk
+*.ap_
+*.aab
+
+# Files for the ART/Dalvik VM
+*.dex
+
+# Java class files
+*.class
+
+# Generated files
+bin/
+gen/
+out/
+
+# Gradle files
+.gradle/
+build/
 /build
-/captures
-.externalNativeBuild
-.cxx
+**/build/
+
+# Local configuration file (sdk path, etc)
 local.properties
+/local.properties
+
+# IntelliJ
+*.iml
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/gradle.xml
+.idea/jarRepositories.xml
+.idea/kotlinc.xml
+.idea/misc.xml
+.idea/compiler.xml
+.idea/vcs.xml
+.idea/.name
+.idea/dictionaries
+.idea/encodings.xml
+.idea/deploymentTargetDropDown.xml
+.idea/deploymentTargetSelector.xml
+.idea/migrations.xml
+.idea/runConfigurations.xml
+/.idea/
+
+# Keystore files
+*.jks
+*.keystore
+
+
+# Google Services (e.g. APIs or Firebase)
+google-services.json
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+
+# Coverage reports
+*.exec
+jacoco.exec
+

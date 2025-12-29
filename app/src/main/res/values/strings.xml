@@ -1,3 +1,40 @@
 <resources>
     <string name="app_name">Simple Todo App</string>
+
+    <!-- Todo List Screen -->
+    <string name="todo_list_title">My Tasks</string>
+    <string name="search_hint">Search tasks…</string>
+    <string name="tab_all">All</string>
+    <string name="tab_completed">Completed</string>
+
+    <!-- Empty state -->
+    <string name="empty_title">All tasks completed!</string>
+    <string name="empty_subtitle">You\'re all caught up. Nicely done.</string>
+
+    <!-- Content descriptions -->
+    <string name="cd_more_options">More options</string>
+    <string name="cd_search">Search</string>
+    <string name="cd_add_task">Add new task</string>
+    <string name="cd_delete_task">Delete task</string>
+    <string name="cd_toggle_complete">Mark task as complete</string>
+
+    <!-- Add/Edit Todo Dialog -->
+    <string name="add_todo_title">Add To-Do</string>
+    <string name="edit_todo_title">Edit To-Do</string>
+    <string name="cancel">Cancel</string>
+    <string name="title_label">Title</string>
+    <string name="description_label">Description</string>
+    <string name="title_placeholder">Enter task title</string>
+    <string name="description_placeholder">Add notes…</string>
+    <string name="completed_label">Completed</string>
+    <string name="save">Save</string>
+    <string name="error_title_required">Title is required</string>
+
+    <!-- Todo Detail Dialog -->
+    <string name="mark_complete">Mark as Complete</string>
+    <string name="notes">Notes</string>
+    <string name="created_on">Created on:</string>
+    <string name="completed_on">Completed on:</string>
+    <string name="cd_edit_task">Edit task</string>
+    <string name="cd_close">Close</string>
 </resources>
