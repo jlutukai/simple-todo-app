@@ -104,12 +104,7 @@ Components involved in rendering information to the user using MVI pattern.
 | <img src="screenshots/completed_todo_light.jpeg" width="260"> | <img src="screenshots/completed_todo_dark.jpeg" width="260"> |
 
 ## App Demo
-**Watch the app walkthrough:**
-<video width="360" height="720" controls>
-  <source src="screenshots/todo_app_walkthrough_video.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
-
+[![Watch the app walkthrough](https://youtube.com/shorts/HqsfqGKS5zE?feature=share)](screenshots/todo_app_walkthrough_video.mp4)
 ## Download
 
 [Download the APK here](https://github.com/jlutukai/SimpleTodoApp/releases)
