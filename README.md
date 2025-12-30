@@ -104,7 +104,11 @@ Components involved in rendering information to the user using MVI pattern.
 | <img src="screenshots/completed_todo_light.jpeg" width="260"> | <img src="screenshots/completed_todo_dark.jpeg" width="260"> |
 
 ## App Demo
-[![Watch the app walkthrough](https://youtube.com/shorts/HqsfqGKS5zE?feature=share)](screenshots/todo_app_walkthrough_video.mp4)
+
+**Watch the app walkthrough on YouTube:**
+
+[![Watch the app walkthrough](https://img.youtube.com/vi/HqsfqGKS5zE/0.jpg)](https://youtube.com/shorts/HqsfqGKS5zE)
+
 ## Download
 
 [Download the APK here](https://github.com/jlutukai/SimpleTodoApp/releases)
