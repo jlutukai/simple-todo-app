@@ -105,7 +105,10 @@ Components involved in rendering information to the user using MVI pattern.
 
 ## App Demo
 
-[Watch the app walkthrough](screenshots/todo_app_walkthrough_video.mp4)
+<video width="360" height="720" controls>
+  <source src="screenshots/todo_app_walkthrough_video.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
 
 ## Download
 
