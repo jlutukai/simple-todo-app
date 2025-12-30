@@ -5,6 +5,7 @@ import com.google.common.truth.Truth.assertThat
 import com.lutukai.simpletodoapp.domain.models.Todo
 import com.lutukai.simpletodoapp.domain.usecases.GetTodoByIdUseCase
 import com.lutukai.simpletodoapp.domain.usecases.UpdateTodoUseCase
+import com.lutukai.simpletodoapp.util.Result
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -69,7 +70,7 @@ class TodoDetailMviViewModelTest {
     @Test
     fun `loadTodo sets state with todo data`() = runTest {
         val todo = createTodo(1L, "Test Title", "Test Desc")
-        coEvery { getTodoByIdUseCase(1L) } returns todo
+        coEvery { getTodoByIdUseCase(1L) } returns Result.Success(todo)
 
         val viewModel = createViewModel()
         viewModel.onIntent(TodoDetailIntent.LoadTodo(1L))
@@ -82,7 +83,7 @@ class TodoDetailMviViewModelTest {
 
     @Test
     fun `loadTodo sets loading to false after completion`() = runTest {
-        coEvery { getTodoByIdUseCase(any()) } returns createTodo()
+        coEvery { getTodoByIdUseCase(any()) } returns Result.Success(createTodo())
 
         val viewModel = createViewModel()
         viewModel.onIntent(TodoDetailIntent.LoadTodo(1L))
@@ -93,7 +94,7 @@ class TodoDetailMviViewModelTest {
 
     @Test
     fun `loadTodo handles not found`() = runTest {
-        coEvery { getTodoByIdUseCase(1L) } returns null
+        coEvery { getTodoByIdUseCase(1L) } returns Result.Success(null)
 
         val viewModel = createViewModel()
 
@@ -113,7 +114,7 @@ class TodoDetailMviViewModelTest {
 
     @Test
     fun `loadTodo handles error`() = runTest {
-        coEvery { getTodoByIdUseCase(any()) } throws RuntimeException("Database error")
+        coEvery { getTodoByIdUseCase(any()) } returns Result.Failure(RuntimeException("Database error"))
 
         val viewModel = createViewModel()
 
@@ -134,8 +135,8 @@ class TodoDetailMviViewModelTest {
     @Test
     fun `toggleComplete updates todo to completed`() = runTest {
         val todo = createTodo(1L, "Test", isCompleted = false)
-        coEvery { getTodoByIdUseCase(1L) } returns todo
-        coEvery { updateTodoUseCase(any()) } returns Unit
+        coEvery { getTodoByIdUseCase(1L) } returns Result.Success(todo)
+        coEvery { updateTodoUseCase(any()) } returns Result.Success(Unit)
 
         val viewModel = createViewModel()
         viewModel.onIntent(TodoDetailIntent.LoadTodo(1L))
@@ -155,8 +156,8 @@ class TodoDetailMviViewModelTest {
     @Test
     fun `toggleComplete updates todo to not completed`() = runTest {
         val todo = createTodo(1L, "Test", isCompleted = true)
-        coEvery { getTodoByIdUseCase(1L) } returns todo
-        coEvery { updateTodoUseCase(any()) } returns Unit
+        coEvery { getTodoByIdUseCase(1L) } returns Result.Success(todo)
+        coEvery { updateTodoUseCase(any()) } returns Result.Success(Unit)
 
         val viewModel = createViewModel()
         viewModel.onIntent(TodoDetailIntent.LoadTodo(1L))
@@ -176,8 +177,8 @@ class TodoDetailMviViewModelTest {
     @Test
     fun `toggleComplete handles error`() = runTest {
         val todo = createTodo(1L, "Test")
-        coEvery { getTodoByIdUseCase(1L) } returns todo
-        coEvery { updateTodoUseCase(any()) } throws RuntimeException("Update failed")
+        coEvery { getTodoByIdUseCase(1L) } returns Result.Success(todo)
+        coEvery { updateTodoUseCase(any()) } returns Result.Failure(RuntimeException("Update failed"))
 
         val viewModel = createViewModel()
         viewModel.onIntent(TodoDetailIntent.LoadTodo(1L))
@@ -208,7 +209,7 @@ class TodoDetailMviViewModelTest {
     @Test
     fun `editClicked sends navigate effect with todoId`() = runTest {
         val todo = createTodo(1L, "Test")
-        coEvery { getTodoByIdUseCase(1L) } returns todo
+        coEvery { getTodoByIdUseCase(1L) } returns Result.Success(todo)
 
         val viewModel = createViewModel()
         viewModel.onIntent(TodoDetailIntent.LoadTodo(1L))

@@ -75,33 +75,32 @@ class TodoListMviViewModel @Inject constructor(
     }
 
     private suspend fun toggleComplete(todo: Todo) {
-        try {
-            toggleTodoCompleteUseCase(todo)
-        } catch (e: Exception) {
-            sendEffect(TodoListSideEffect.ShowSnackbar("Update failed"))
-        }
+        toggleTodoCompleteUseCase(todo)
+            .onFailure { _, _ ->
+                sendEffect(TodoListSideEffect.ShowSnackbar("Update failed"))
+            }
     }
 
     private suspend fun deleteTodo(todo: Todo) {
-        try {
-            deleteTodoUseCase(todo)
-            sendEffect(
-                TodoListSideEffect.ShowSnackbar(
-                    message = "Task deleted",
-                    actionLabel = "Undo",
-                    todo = todo
+        deleteTodoUseCase(todo)
+            .onSuccess {
+                sendEffect(
+                    TodoListSideEffect.ShowSnackbar(
+                        message = "Task deleted",
+                        actionLabel = "Undo",
+                        todo = todo
+                    )
                 )
-            )
-        } catch (e: Exception) {
-            sendEffect(TodoListSideEffect.ShowSnackbar("Delete failed"))
-        }
+            }
+            .onFailure { _, _ ->
+                sendEffect(TodoListSideEffect.ShowSnackbar("Delete failed"))
+            }
     }
 
     private suspend fun undoDelete(todo: Todo) {
-        try {
-            insertTodoUseCase(todo)
-        } catch (e: Exception) {
-            sendEffect(TodoListSideEffect.ShowSnackbar("Restore failed"))
-        }
+        insertTodoUseCase(todo)
+            .onFailure { _, _ ->
+                sendEffect(TodoListSideEffect.ShowSnackbar("Restore failed"))
+            }
     }
 }

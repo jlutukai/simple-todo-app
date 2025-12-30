@@ -3,6 +3,7 @@ package com.lutukai.simpletodoapp.domain.usecases
 import com.google.common.truth.Truth.assertThat
 import com.lutukai.simpletodoapp.domain.models.Todo
 import com.lutukai.simpletodoapp.domain.repository.TodoRepository
+import com.lutukai.simpletodoapp.util.Result
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -24,28 +25,24 @@ class DeleteTodoUseCaseTest {
     @Test
     fun `invoke calls repository deleteTodo`() = runTest {
         val todo = createTodo(1, "Todo to delete")
-        coEvery { repository.deleteTodo(any()) } returns Unit
+        coEvery { repository.deleteTodo(any()) } returns Result.Success(Unit)
 
-        useCase(todo)
+        val result = useCase(todo)
 
+        assertThat(result).isInstanceOf(Result.Success::class.java)
         coVerify { repository.deleteTodo(todo) }
     }
 
     @Test
-    fun `invoke propagates error from repository`() = runTest {
+    fun `invoke returns Failure from repository`() = runTest {
         val todo = createTodo(1, "Todo to delete")
         val error = RuntimeException("Delete failed")
-        coEvery { repository.deleteTodo(any()) } throws error
+        coEvery { repository.deleteTodo(any()) } returns Result.Failure(error)
 
-        var thrownError: Throwable? = null
-        try {
-            useCase(todo)
-        } catch (e: Exception) {
-            thrownError = e
-        }
+        val result = useCase(todo)
 
-        assertThat(thrownError).isInstanceOf(RuntimeException::class.java)
-        assertThat(thrownError?.message).isEqualTo("Delete failed")
+        assertThat(result).isInstanceOf(Result.Failure::class.java)
+        assertThat((result as Result.Failure).message).isEqualTo("Delete failed")
     }
 
     private fun createTodo(

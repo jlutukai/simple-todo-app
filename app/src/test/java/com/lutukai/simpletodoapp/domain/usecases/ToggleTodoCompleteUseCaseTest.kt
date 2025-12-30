@@ -3,6 +3,7 @@ package com.lutukai.simpletodoapp.domain.usecases
 import com.google.common.truth.Truth.assertThat
 import com.lutukai.simpletodoapp.domain.models.Todo
 import com.lutukai.simpletodoapp.domain.repository.TodoRepository
+import com.lutukai.simpletodoapp.util.Result
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -26,12 +27,14 @@ class ToggleTodoCompleteUseCaseTest {
     fun `invoke toggles incomplete todo to complete with timestamp`() = runTest {
         val todo = createTodo(id = 1, title = "Test", isCompleted = false)
         val todoSlot = slot<Todo>()
-        coEvery { repository.updateTodo(capture(todoSlot)) } returns Unit
+        coEvery { repository.updateTodo(capture(todoSlot)) } returns Result.Success(Unit)
 
         val result = useCase(todo)
 
-        assertThat(result.isCompleted).isTrue()
-        assertThat(result.completedAt).isNotNull()
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val data = (result as Result.Success).data
+        assertThat(data.isCompleted).isTrue()
+        assertThat(data.completedAt).isNotNull()
         assertThat(todoSlot.captured.isCompleted).isTrue()
         assertThat(todoSlot.captured.completedAt).isNotNull()
         coVerify { repository.updateTodo(any()) }
@@ -40,12 +43,14 @@ class ToggleTodoCompleteUseCaseTest {
     @Test
     fun `invoke toggles complete todo to incomplete and clears timestamp`() = runTest {
         val todo = createTodo(id = 1, title = "Test", isCompleted = true, completedAt = 12345L)
-        coEvery { repository.updateTodo(any()) } returns Unit
+        coEvery { repository.updateTodo(any()) } returns Result.Success(Unit)
 
         val result = useCase(todo)
 
-        assertThat(result.isCompleted).isFalse()
-        assertThat(result.completedAt).isNull()
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val data = (result as Result.Success).data
+        assertThat(data.isCompleted).isFalse()
+        assertThat(data.completedAt).isNull()
     }
 
     @Test
@@ -59,30 +64,27 @@ class ToggleTodoCompleteUseCaseTest {
             createdAt = 999L
         )
         val todoSlot = slot<Todo>()
-        coEvery { repository.updateTodo(capture(todoSlot)) } returns Unit
+        coEvery { repository.updateTodo(capture(todoSlot)) } returns Result.Success(Unit)
 
         val result = useCase(todo)
 
-        assertThat(result.id).isEqualTo(1L)
-        assertThat(result.title).isEqualTo("Original Title")
-        assertThat(result.description).isEqualTo("Original Description")
-        assertThat(result.createdAt).isEqualTo(999L)
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val data = (result as Result.Success).data
+        assertThat(data.id).isEqualTo(1L)
+        assertThat(data.title).isEqualTo("Original Title")
+        assertThat(data.description).isEqualTo("Original Description")
+        assertThat(data.createdAt).isEqualTo(999L)
     }
 
     @Test
-    fun `invoke propagates error from repository`() = runTest {
+    fun `invoke returns Failure from repository`() = runTest {
         val todo = createTodo(id = 1, title = "Test")
-        coEvery { repository.updateTodo(any()) } throws RuntimeException("Update failed")
+        coEvery { repository.updateTodo(any()) } returns Result.Failure(RuntimeException("Update failed"))
 
-        var thrownError: Throwable? = null
-        try {
-            useCase(todo)
-        } catch (e: Exception) {
-            thrownError = e
-        }
+        val result = useCase(todo)
 
-        assertThat(thrownError).isInstanceOf(RuntimeException::class.java)
-        assertThat(thrownError?.message).isEqualTo("Update failed")
+        assertThat(result).isInstanceOf(Result.Failure::class.java)
+        assertThat((result as Result.Failure).message).isEqualTo("Update failed")
     }
 
     private fun createTodo(

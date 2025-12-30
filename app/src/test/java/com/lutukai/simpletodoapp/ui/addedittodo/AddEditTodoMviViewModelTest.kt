@@ -5,6 +5,7 @@ import com.google.common.truth.Truth.assertThat
 import com.lutukai.simpletodoapp.domain.models.Todo
 import com.lutukai.simpletodoapp.domain.usecases.GetTodoByIdUseCase
 import com.lutukai.simpletodoapp.domain.usecases.InsertTodoUseCase
+import com.lutukai.simpletodoapp.util.Result
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -71,7 +72,7 @@ class AddEditTodoMviViewModelTest {
     @Test
     fun `loadTodo sets edit mode with data`() = runTest {
         val todo = createTodo(1L, "Test Title", "Test Desc", false)
-        coEvery { getTodoByIdUseCase(1L) } returns todo
+        coEvery { getTodoByIdUseCase(1L) } returns Result.Success(todo)
 
         val viewModel = createViewModel()
         viewModel.onIntent(AddEditTodoIntent.LoadTodo(1L))
@@ -86,7 +87,7 @@ class AddEditTodoMviViewModelTest {
 
     @Test
     fun `loadTodo sets loading to false after completion`() = runTest {
-        coEvery { getTodoByIdUseCase(any()) } returns createTodo()
+        coEvery { getTodoByIdUseCase(any()) } returns Result.Success(createTodo())
 
         val viewModel = createViewModel()
         viewModel.onIntent(AddEditTodoIntent.LoadTodo(1L))
@@ -97,7 +98,7 @@ class AddEditTodoMviViewModelTest {
 
     @Test
     fun `loadTodo handles not found`() = runTest {
-        coEvery { getTodoByIdUseCase(1L) } returns null
+        coEvery { getTodoByIdUseCase(1L) } returns Result.Success(null)
 
         val viewModel = createViewModel()
 
@@ -116,7 +117,7 @@ class AddEditTodoMviViewModelTest {
 
     @Test
     fun `loadTodo handles error`() = runTest {
-        coEvery { getTodoByIdUseCase(any()) } throws RuntimeException("Database error")
+        coEvery { getTodoByIdUseCase(any()) } returns Result.Failure(RuntimeException("Database error"))
 
         val viewModel = createViewModel()
 
@@ -169,7 +170,7 @@ class AddEditTodoMviViewModelTest {
 
     @Test
     fun `saveTodo creates new todo in add mode`() = runTest {
-        coEvery { insertTodoUseCase(any()) } returns Unit
+        coEvery { insertTodoUseCase(any()) } returns Result.Success(Unit)
 
         val viewModel = createViewModel()
         viewModel.onIntent(AddEditTodoIntent.UpdateTitle("New Task"))
@@ -195,8 +196,8 @@ class AddEditTodoMviViewModelTest {
     @Test
     fun `saveTodo updates existing todo in edit mode`() = runTest {
         val existingTodo = createTodo(1L, "Old Title", "Old Desc")
-        coEvery { getTodoByIdUseCase(1L) } returns existingTodo
-        coEvery { insertTodoUseCase(any()) } returns Unit
+        coEvery { getTodoByIdUseCase(1L) } returns Result.Success(existingTodo)
+        coEvery { insertTodoUseCase(any()) } returns Result.Success(Unit)
 
         val viewModel = createViewModel()
         viewModel.onIntent(AddEditTodoIntent.LoadTodo(1L))
@@ -241,7 +242,7 @@ class AddEditTodoMviViewModelTest {
 
     @Test
     fun `saveTodo handles error`() = runTest {
-        coEvery { insertTodoUseCase(any()) } throws RuntimeException("Save failed")
+        coEvery { insertTodoUseCase(any()) } returns Result.Failure(RuntimeException("Save failed"))
 
         val viewModel = createViewModel()
         viewModel.onIntent(AddEditTodoIntent.UpdateTitle("Test"))

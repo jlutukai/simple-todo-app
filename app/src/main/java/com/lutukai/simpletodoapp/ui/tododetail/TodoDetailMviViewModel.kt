@@ -3,6 +3,7 @@ package com.lutukai.simpletodoapp.ui.tododetail
 import com.lutukai.simpletodoapp.domain.usecases.GetTodoByIdUseCase
 import com.lutukai.simpletodoapp.domain.usecases.UpdateTodoUseCase
 import com.lutukai.simpletodoapp.ui.mvi.MviViewModel
+import com.lutukai.simpletodoapp.util.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
@@ -31,32 +32,38 @@ class TodoDetailMviViewModel @Inject constructor(
 
     private suspend fun loadTodo(todoId: Long) {
         updateState { copy(isLoading = true, error = null) }
-        try {
-            val todo = getTodoByIdUseCase(todoId)
-            if (todo != null) {
-                updateState { copy(todo = todo, isLoading = false) }
-            } else {
-                updateState { copy(isLoading = false, error = "Todo not found") }
-                sendEffect(TodoDetailSideEffect.ShowError("Todo not found"))
+
+        when (val result = getTodoByIdUseCase(todoId)) {
+            is Result.Success -> {
+                val todo = result.data
+                if (todo != null) {
+                    updateState { copy(todo = todo, isLoading = false) }
+                } else {
+                    updateState { copy(isLoading = false, error = "Todo not found") }
+                    sendEffect(TodoDetailSideEffect.ShowError("Todo not found"))
+                }
             }
-        } catch (e: Exception) {
-            val errorMsg = e.message ?: "An Unknown Error Occurred"
-            updateState { copy(isLoading = false, error = errorMsg) }
-            sendEffect(TodoDetailSideEffect.ShowError(errorMsg))
+            is Result.Failure -> {
+                updateState { copy(isLoading = false, error = result.message) }
+                sendEffect(TodoDetailSideEffect.ShowError(result.message))
+            }
         }
     }
 
     private suspend fun toggleComplete(isCompleted: Boolean) {
         val todo = currentState.todo ?: return
-        try {
-            val updatedTodo = todo.copy(
-                isCompleted = isCompleted,
-                completedAt = if (isCompleted) System.currentTimeMillis() else null
-            )
-            updateTodoUseCase(updatedTodo)
-            updateState { copy(todo = updatedTodo) }
-        } catch (e: Exception) {
-            sendEffect(TodoDetailSideEffect.ShowError(e.message ?: "Failed to update task"))
-        }
+
+        val updatedTodo = todo.copy(
+            isCompleted = isCompleted,
+            completedAt = if (isCompleted) System.currentTimeMillis() else null
+        )
+
+        updateTodoUseCase(updatedTodo)
+            .onSuccess {
+                updateState { copy(todo = updatedTodo) }
+            }
+            .onFailure { exception, _ ->
+                sendEffect(TodoDetailSideEffect.ShowError(exception.message ?: "Failed to update task"))
+            }
     }
 }
