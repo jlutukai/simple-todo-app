@@ -2,6 +2,7 @@ package com.lutukai.simpletodoapp.domain.usecases
 
 import com.google.common.truth.Truth.assertThat
 import com.lutukai.simpletodoapp.domain.repository.TodoRepository
+import com.lutukai.simpletodoapp.util.Result
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -21,37 +22,34 @@ class DeleteCompletedTodosUseCaseTest {
     }
 
     @Test
-    fun `invoke returns count of deleted todos`() = runTest {
-        coEvery { repository.deleteCompletedTodos() } returns 5
+    fun `invoke returns Success with count of deleted todos`() = runTest {
+        coEvery { repository.deleteCompletedTodos() } returns Result.Success(5)
 
         val result = useCase()
 
-        assertThat(result).isEqualTo(5)
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        assertThat((result as Result.Success).data).isEqualTo(5)
         coVerify { repository.deleteCompletedTodos() }
     }
 
     @Test
-    fun `invoke returns zero when no completed todos exist`() = runTest {
-        coEvery { repository.deleteCompletedTodos() } returns 0
+    fun `invoke returns Success with zero when no completed todos exist`() = runTest {
+        coEvery { repository.deleteCompletedTodos() } returns Result.Success(0)
 
         val result = useCase()
 
-        assertThat(result).isEqualTo(0)
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        assertThat((result as Result.Success).data).isEqualTo(0)
     }
 
     @Test
-    fun `invoke propagates error from repository`() = runTest {
+    fun `invoke returns Failure from repository`() = runTest {
         val error = RuntimeException("Delete failed")
-        coEvery { repository.deleteCompletedTodos() } throws error
+        coEvery { repository.deleteCompletedTodos() } returns Result.Failure(error)
 
-        var thrownError: Throwable? = null
-        try {
-            useCase()
-        } catch (e: Exception) {
-            thrownError = e
-        }
+        val result = useCase()
 
-        assertThat(thrownError).isInstanceOf(RuntimeException::class.java)
-        assertThat(thrownError?.message).isEqualTo("Delete failed")
+        assertThat(result).isInstanceOf(Result.Failure::class.java)
+        assertThat((result as Result.Failure).message).isEqualTo("Delete failed")
     }
 }

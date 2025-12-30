@@ -7,6 +7,7 @@ import com.lutukai.simpletodoapp.domain.usecases.DeleteTodoUseCase
 import com.lutukai.simpletodoapp.domain.usecases.GetAllTodosUseCase
 import com.lutukai.simpletodoapp.domain.usecases.InsertTodoUseCase
 import com.lutukai.simpletodoapp.domain.usecases.ToggleTodoCompleteUseCase
+import com.lutukai.simpletodoapp.util.Result
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -131,7 +132,7 @@ class TodoListMviViewModelTest {
         val todo = createTodo(1, "Test", isCompleted = false)
         val toggledTodo = todo.copy(isCompleted = true, completedAt = System.currentTimeMillis())
         every { getAllTodosUseCase() } returns flowOf(listOf(todo))
-        coEvery { toggleTodoCompleteUseCase(any()) } returns toggledTodo
+        coEvery { toggleTodoCompleteUseCase(any()) } returns Result.Success(toggledTodo)
 
         val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
@@ -146,7 +147,7 @@ class TodoListMviViewModelTest {
     fun `toggleComplete handles error and shows snackbar`() = runTest {
         val todo = createTodo(1, "Test")
         every { getAllTodosUseCase() } returns flowOf(listOf(todo))
-        coEvery { toggleTodoCompleteUseCase(any()) } throws RuntimeException("Update failed")
+        coEvery { toggleTodoCompleteUseCase(any()) } returns Result.Failure(RuntimeException("Update failed"))
 
         val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
@@ -166,7 +167,7 @@ class TodoListMviViewModelTest {
     fun `deleteTodo calls use case and shows snackbar with undo`() = runTest {
         val todo = createTodo(1, "Test")
         every { getAllTodosUseCase() } returns flowOf(listOf(todo))
-        coEvery { deleteTodoUseCase(any()) } returns Unit
+        coEvery { deleteTodoUseCase(any()) } returns Result.Success(Unit)
 
         val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
@@ -191,7 +192,7 @@ class TodoListMviViewModelTest {
     fun `deleteTodo handles error`() = runTest {
         val todo = createTodo(1, "Test")
         every { getAllTodosUseCase() } returns flowOf(listOf(todo))
-        coEvery { deleteTodoUseCase(any()) } throws RuntimeException("Delete failed")
+        coEvery { deleteTodoUseCase(any()) } returns Result.Failure(RuntimeException("Delete failed"))
 
         val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
@@ -211,7 +212,7 @@ class TodoListMviViewModelTest {
     fun `undoDelete calls insert use case`() = runTest {
         val todo = createTodo(1, "Test")
         every { getAllTodosUseCase() } returns flowOf(emptyList())
-        coEvery { insertTodoUseCase(any()) } returns Unit
+        coEvery { insertTodoUseCase(any()) } returns Result.Success(Unit)
 
         val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
@@ -226,7 +227,7 @@ class TodoListMviViewModelTest {
     fun `undoDelete handles error`() = runTest {
         val todo = createTodo(1, "Test")
         every { getAllTodosUseCase() } returns flowOf(emptyList())
-        coEvery { insertTodoUseCase(any()) } throws RuntimeException("Restore failed")
+        coEvery { insertTodoUseCase(any()) } returns Result.Failure(RuntimeException("Restore failed"))
 
         val viewModel = createViewModel()
         testDispatcher.scheduler.advanceUntilIdle()

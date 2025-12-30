@@ -3,6 +3,7 @@ package com.lutukai.simpletodoapp.domain.usecases
 import com.google.common.truth.Truth.assertThat
 import com.lutukai.simpletodoapp.domain.models.Todo
 import com.lutukai.simpletodoapp.domain.repository.TodoRepository
+import com.lutukai.simpletodoapp.util.Result
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -24,28 +25,24 @@ class UpdateTodoUseCaseTest {
     @Test
     fun `invoke calls repository updateTodo`() = runTest {
         val todo = createTodo(1, "Updated Todo")
-        coEvery { repository.updateTodo(any()) } returns Unit
+        coEvery { repository.updateTodo(any()) } returns Result.Success(Unit)
 
-        useCase(todo)
+        val result = useCase(todo)
 
+        assertThat(result).isInstanceOf(Result.Success::class.java)
         coVerify { repository.updateTodo(todo) }
     }
 
     @Test
-    fun `invoke propagates error from repository`() = runTest {
+    fun `invoke returns Failure from repository`() = runTest {
         val todo = createTodo(1, "Updated Todo")
         val error = RuntimeException("Update failed")
-        coEvery { repository.updateTodo(any()) } throws error
+        coEvery { repository.updateTodo(any()) } returns Result.Failure(error)
 
-        var thrownError: Throwable? = null
-        try {
-            useCase(todo)
-        } catch (e: Exception) {
-            thrownError = e
-        }
+        val result = useCase(todo)
 
-        assertThat(thrownError).isInstanceOf(RuntimeException::class.java)
-        assertThat(thrownError?.message).isEqualTo("Update failed")
+        assertThat(result).isInstanceOf(Result.Failure::class.java)
+        assertThat((result as Result.Failure).message).isEqualTo("Update failed")
     }
 
     private fun createTodo(

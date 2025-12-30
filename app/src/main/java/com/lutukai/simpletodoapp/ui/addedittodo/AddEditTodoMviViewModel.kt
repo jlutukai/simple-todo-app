@@ -4,6 +4,7 @@ import com.lutukai.simpletodoapp.domain.models.Todo
 import com.lutukai.simpletodoapp.domain.usecases.GetTodoByIdUseCase
 import com.lutukai.simpletodoapp.domain.usecases.InsertTodoUseCase
 import com.lutukai.simpletodoapp.ui.mvi.MviViewModel
+import com.lutukai.simpletodoapp.util.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
@@ -28,26 +29,29 @@ class AddEditTodoMviViewModel @Inject constructor(
 
     private suspend fun loadTodo(todoId: Long) {
         updateState { copy(isLoading = true, error = null, isEditMode = true) }
-        try {
-            val todo = getTodoByIdUseCase(todoId)
-            if (todo != null) {
-                updateState {
-                    copy(
-                        todo = todo,
-                        title = todo.title,
-                        description = todo.description,
-                        isCompleted = todo.isCompleted,
-                        isLoading = false
-                    )
+
+        when (val result = getTodoByIdUseCase(todoId)) {
+            is Result.Success -> {
+                val todo = result.data
+                if (todo != null) {
+                    updateState {
+                        copy(
+                            todo = todo,
+                            title = todo.title,
+                            description = todo.description,
+                            isCompleted = todo.isCompleted,
+                            isLoading = false
+                        )
+                    }
+                } else {
+                    updateState { copy(isLoading = false, error = "Todo not found") }
+                    sendEffect(AddEditTodoSideEffect.ShowError("Todo not found"))
                 }
-            } else {
-                updateState { copy(isLoading = false, error = "Todo not found") }
-                sendEffect(AddEditTodoSideEffect.ShowError("Todo not found"))
             }
-        } catch (e: Exception) {
-            val errorMsg = e.message ?: "An Unknown Error Occurred"
-            updateState { copy(isLoading = false, error = errorMsg) }
-            sendEffect(AddEditTodoSideEffect.ShowError(errorMsg))
+            is Result.Failure -> {
+                updateState { copy(isLoading = false, error = result.message) }
+                sendEffect(AddEditTodoSideEffect.ShowError(result.message))
+            }
         }
     }
 
@@ -59,23 +63,24 @@ class AddEditTodoMviViewModel @Inject constructor(
         }
 
         updateState { copy(isLoading = true, error = null) }
-        try {
-            insertTodoUseCase(
-                Todo(
-                    id = state.todo?.id,
-                    title = state.title.trim(),
-                    description = state.description.trim(),
-                    isCompleted = state.isCompleted,
-                    completedAt = if (state.isCompleted) System.currentTimeMillis() else null,
-                    createdAt = state.todo?.createdAt ?: System.currentTimeMillis()
-                )
-            )
-            updateState { copy(isLoading = false) }
-            sendEffect(AddEditTodoSideEffect.SaveSuccess)
-        } catch (e: Exception) {
-            val errorMsg = e.message ?: "An Unknown Error Occurred"
-            updateState { copy(isLoading = false, error = errorMsg) }
-            sendEffect(AddEditTodoSideEffect.ShowError(errorMsg))
-        }
+
+        val todoToSave = Todo(
+            id = state.todo?.id,
+            title = state.title.trim(),
+            description = state.description.trim(),
+            isCompleted = state.isCompleted,
+            completedAt = if (state.isCompleted) System.currentTimeMillis() else null,
+            createdAt = state.todo?.createdAt ?: System.currentTimeMillis()
+        )
+
+        insertTodoUseCase(todoToSave)
+            .onSuccess {
+                updateState { copy(isLoading = false) }
+                sendEffect(AddEditTodoSideEffect.SaveSuccess)
+            }
+            .onFailure { _, message ->
+                updateState { copy(isLoading = false, error = message) }
+                sendEffect(AddEditTodoSideEffect.ShowError(message))
+            }
     }
 }

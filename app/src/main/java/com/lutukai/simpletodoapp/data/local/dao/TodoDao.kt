@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
+import androidx.room.Upsert
 import com.lutukai.simpletodoapp.data.local.entity.TodoEntity
 import com.lutukai.simpletodoapp.data.local.entity.TodoEntity.Companion.TODO_TABLE_NAME
 import kotlinx.coroutines.flow.Flow
@@ -22,7 +23,7 @@ interface TodoDao {
     suspend fun getTodoById(id: Long): TodoEntity?
 
     // Insert todo
-    @Insert
+    @Upsert
     suspend fun insertTodo(todo: TodoEntity)
 
     // Insert and get the inserted row ID
