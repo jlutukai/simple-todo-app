@@ -27,12 +27,7 @@ import androidx.compose.ui.unit.sp
  * @param icon Optional icon to display above the text
  */
 @Composable
-fun EmptyState(
-    title: String,
-    subtitle: String,
-    modifier: Modifier = Modifier,
-    icon: ImageVector? = null
-) {
+fun EmptyState(title: String, subtitle: String, modifier: Modifier = Modifier, icon: ImageVector? = null) {
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center

@@ -17,15 +17,12 @@ data class TodoListState(
 ) : UiState {
 
     enum class TodoFilter {
-        ALL, COMPLETED
+        ALL,
+        COMPLETED
     }
 
     companion object {
-        fun computeFilteredTodos(
-            todos: List<Todo>,
-            filter: TodoFilter,
-            searchQuery: String
-        ): List<Todo> {
+        fun computeFilteredTodos(todos: List<Todo>, filter: TodoFilter, searchQuery: String): List<Todo> {
             var result = todos
 
             if (filter == TodoFilter.COMPLETED) {
@@ -56,11 +53,8 @@ sealed interface TodoListIntent : UiIntent {
 }
 
 sealed interface TodoListSideEffect : SideEffect {
-    data class ShowSnackbar(
-        val message: String,
-        val actionLabel: String? = null,
-        val todo: Todo? = null
-    ) : TodoListSideEffect
+    data class ShowSnackbar(val message: String, val actionLabel: String? = null, val todo: Todo? = null) :
+        TodoListSideEffect
 
     data class NavigateToDetail(val todoId: Long) : TodoListSideEffect
     data object NavigateToAddTodo : TodoListSideEffect

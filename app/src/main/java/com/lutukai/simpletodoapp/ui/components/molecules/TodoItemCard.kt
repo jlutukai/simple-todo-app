@@ -1,6 +1,5 @@
 package com.lutukai.simpletodoapp.ui.components.molecules
 
-import com.lutukai.simpletodoapp.ui.util.debouncedClickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -16,16 +15,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.lutukai.simpletodoapp.R
-import com.lutukai.simpletodoapp.ui.util.TestTags
 import com.lutukai.simpletodoapp.domain.models.Todo
 import com.lutukai.simpletodoapp.ui.preview.DevicePreviews
 import com.lutukai.simpletodoapp.ui.theme.SimpleTodoAppTheme
+import com.lutukai.simpletodoapp.ui.util.TestTags
+import com.lutukai.simpletodoapp.ui.util.debouncedClickable
 
 /**
  * A card component for displaying a single todo item with a checkbox,
@@ -130,7 +130,7 @@ private fun TodoItemCardCompletedPreview() {
                 description = "Complete the quarterly report",
                 isCompleted = true,
                 completedAt = System.currentTimeMillis(),
-                createdAt = System.currentTimeMillis() - 86400000
+                createdAt = System.currentTimeMillis() - 86_400_000
             ),
             onToggleComplete = { },
             onDelete = { },

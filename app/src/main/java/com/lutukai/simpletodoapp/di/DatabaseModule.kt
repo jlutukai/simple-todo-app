@@ -18,13 +18,11 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideDatabase(@ApplicationContext context: Context): AppDataBase {
-        return Room.databaseBuilder(
-            context,
-            AppDataBase::class.java,
-            DB_NAME
-        ).build()
-    }
+    fun provideDatabase(@ApplicationContext context: Context): AppDataBase = Room.databaseBuilder(
+        context,
+        AppDataBase::class.java,
+        DB_NAME
+    ).build()
 
     @Provides
     fun provideTodoDao(database: AppDataBase): TodoDao = database.todoDao()

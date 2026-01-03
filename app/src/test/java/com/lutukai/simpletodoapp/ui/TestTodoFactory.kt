@@ -30,10 +30,7 @@ object TestTodoFactory {
         )
     }
 
-    fun createCompletedTodo(
-        id: Long = 1L,
-        title: String = "Completed Todo"
-    ): Todo = createTodo(
+    fun createCompletedTodo(id: Long = 1L, title: String = "Completed Todo"): Todo = createTodo(
         id = id,
         title = title,
         isCompleted = true,

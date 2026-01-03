@@ -23,13 +23,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.lutukai.simpletodoapp.ui.util.TestTags
 import com.lutukai.simpletodoapp.R
 import com.lutukai.simpletodoapp.domain.models.Todo
 import com.lutukai.simpletodoapp.ui.components.molecules.KeyValueRow
@@ -43,6 +42,9 @@ import com.lutukai.simpletodoapp.ui.mvi.collectState
 import com.lutukai.simpletodoapp.ui.mvi.rememberOnIntent
 import com.lutukai.simpletodoapp.ui.preview.DevicePreviews
 import com.lutukai.simpletodoapp.ui.theme.SimpleTodoAppTheme
+import com.lutukai.simpletodoapp.ui.util.TestTags
+import com.lutukai.simpletodoapp.ui.util.showSnackbarWithAction
+import com.lutukai.simpletodoapp.util.Constants
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -68,7 +70,7 @@ fun TodoDetailScreen(
         when (effect) {
             is TodoDetailSideEffect.NavigateToEdit -> onNavigateToEdit(effect.todoId)
             is TodoDetailSideEffect.ShowError -> {
-                snackbarHostState.showSnackbar(effect.message)
+                snackbarHostState.showSnackbarWithAction(message = effect.message)
             }
             is TodoDetailSideEffect.Dismiss -> onDismiss()
         }
@@ -93,7 +95,7 @@ internal fun TodoDetailContent(
     onIntent: (TodoDetailIntent) -> Unit,
     snackbarHostState: SnackbarHostState
 ) {
-    val dateFormat = remember { SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault()) }
+    val dateFormat = remember { SimpleDateFormat(Constants.DATE_FORMAT_PATTERN, Locale.getDefault()) }
 
     Column(
         modifier = Modifier
@@ -199,7 +201,7 @@ private fun TodoDetailContentPreview() {
                     description = "Milk, eggs, bread, fruits, vegetables, and some snacks for the weekend.",
                     isCompleted = false,
                     completedAt = null,
-                    createdAt = System.currentTimeMillis() - 86400000
+                    createdAt = System.currentTimeMillis() - 86_400_000
                 ),
                 isLoading = false
             ),
@@ -221,7 +223,7 @@ private fun TodoDetailContentCompletedPreview() {
                     description = "Complete the quarterly report with all the data analysis and charts.",
                     isCompleted = true,
                     completedAt = System.currentTimeMillis(),
-                    createdAt = System.currentTimeMillis() - 172800000
+                    createdAt = System.currentTimeMillis() - 172_800_000
                 ),
                 isLoading = false
             ),

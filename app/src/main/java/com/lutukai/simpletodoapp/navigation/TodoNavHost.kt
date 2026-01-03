@@ -12,10 +12,7 @@ import com.lutukai.simpletodoapp.ui.features.tododetail.TodoDetailScreen
 import com.lutukai.simpletodoapp.ui.features.todolist.TodoListScreen
 
 @Composable
-fun TodoNavHost(
-    navController: NavHostController,
-    modifier: Modifier = Modifier
-) {
+fun TodoNavHost(navController: NavHostController, modifier: Modifier = Modifier) {
     NavHost(
         navController = navController,
         startDestination = NavRoute.TodoList,

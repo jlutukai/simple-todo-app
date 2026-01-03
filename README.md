@@ -74,6 +74,52 @@ Comprehensive test coverage across all architecture layers (17 test files).
 ./gradlew testDebugUnitTestCoverage
 ```
 
+## Code Quality
+
+Multi-layered code quality strategy with automated checks to maintain high standards.
+
+### Quality Tools
+
+| Tool | Version | Purpose |
+|------|---------|---------|
+| [Spotless](https://github.com/diffplug/spotless) | 7.0.2 | Code formatting orchestration |
+| [ktlint](https://pinterest.github.io/ktlint/) | 1.5.0 | Kotlin linting rules |
+| [Detekt](https://detekt.dev/) | 1.23.8 | Static code analysis |
+| [JaCoCo](https://www.jacoco.org/) | - | Test coverage reports |
+| [EditorConfig](https://editorconfig.org/) | - | IDE settings consistency |
+
+### Running Quality Checks
+
+```bash
+# Check code formatting
+./gradlew spotlessCheck
+
+# Auto-fix formatting issues
+./gradlew spotlessApply
+
+# Run static analysis
+./gradlew detekt
+
+# Generate test coverage report
+./gradlew testDebugUnitTestCoverage
+```
+
+### Git Hooks
+
+Pre-commit and pre-push hooks automatically run `spotlessApply` (auto-fix formatting) and `detekt` to maintain code quality. Formatting fixes are automatically staged in the commit.
+
+```bash
+# Install git hooks
+./scripts/git-hooks/install-hooks.sh
+```
+
+### Configuration Files
+
+| File | Description |
+|------|-------------|
+| `.editorconfig` | Editor settings (UTF-8, 4-space indent, 120 char lines) |
+| `config/detekt/detekt.yml` | Detekt rules with zero-tolerance policy |
+
 ## App Architecture
 
 This app uses **Clean Architecture** with the **MVI (Model-View-Intent)** pattern. Read more about clean architecture [here](http://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html).

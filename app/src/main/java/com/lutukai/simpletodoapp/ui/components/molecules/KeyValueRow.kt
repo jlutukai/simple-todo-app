@@ -20,11 +20,7 @@ import androidx.compose.ui.unit.dp
  * @param modifier Modifier to be applied to the row
  */
 @Composable
-fun KeyValueRow(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier
-) {
+fun KeyValueRow(label: String, value: String, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .fillMaxWidth()

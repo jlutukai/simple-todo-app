@@ -187,9 +187,11 @@ class AddEditTodoMviViewModelTest {
         }
 
         coVerify {
-            insertTodoUseCase(match {
-                it.id == null && it.title == "New Task" && it.description == "Task Description"
-            })
+            insertTodoUseCase(
+                match {
+                    it.id == null && it.title == "New Task" && it.description == "Task Description"
+                }
+            )
         }
     }
 
@@ -216,9 +218,11 @@ class AddEditTodoMviViewModelTest {
         }
 
         coVerify {
-            insertTodoUseCase(match {
-                it.id == 1L && it.title == "Updated Title"
-            })
+            insertTodoUseCase(
+                match {
+                    it.id == 1L && it.title == "Updated Title"
+                }
+            )
         }
     }
 

@@ -24,20 +24,18 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.lutukai.simpletodoapp.ui.util.TestTags
 import com.lutukai.simpletodoapp.R
 import com.lutukai.simpletodoapp.domain.models.Todo
 import com.lutukai.simpletodoapp.ui.components.molecules.SearchBar
@@ -49,6 +47,8 @@ import com.lutukai.simpletodoapp.ui.mvi.collectState
 import com.lutukai.simpletodoapp.ui.mvi.rememberOnIntent
 import com.lutukai.simpletodoapp.ui.preview.DevicePreviews
 import com.lutukai.simpletodoapp.ui.theme.SimpleTodoAppTheme
+import com.lutukai.simpletodoapp.ui.util.TestTags
+import com.lutukai.simpletodoapp.ui.util.showSnackbarWithAction
 
 @Composable
 fun TodoListScreen(
@@ -65,14 +65,16 @@ fun TodoListScreen(
             is TodoListSideEffect.NavigateToAddTodo -> onNavigateToAddTodo()
             is TodoListSideEffect.NavigateToDetail -> onNavigateToDetail(effect.todoId)
             is TodoListSideEffect.ShowSnackbar -> {
-                val result = snackbarHostState.showSnackbar(
+                snackbarHostState.showSnackbarWithAction(
                     message = effect.message,
                     actionLabel = effect.actionLabel,
-                    duration = SnackbarDuration.Long
+                    duration = SnackbarDuration.Long,
+                    onActionPerformed = {
+                        if (effect.todo != null) {
+                            viewModel.onIntent(TodoListIntent.UndoDelete(effect.todo))
+                        }
+                    }
                 )
-                if (result == SnackbarResult.ActionPerformed && effect.todo != null) {
-                    viewModel.onIntent(TodoListIntent.UndoDelete(effect.todo))
-                }
             }
         }
     }
@@ -103,11 +105,7 @@ fun TodoListScreen(
 }
 
 @Composable
-internal fun TodoListContent(
-    state: TodoListState,
-    onIntent: (TodoListIntent) -> Unit,
-    modifier: Modifier = Modifier
-) {
+internal fun TodoListContent(state: TodoListState, onIntent: (TodoListIntent) -> Unit, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -242,7 +240,7 @@ private fun TodoListContentPreview() {
             description = "Complete the quarterly report",
             isCompleted = true,
             completedAt = System.currentTimeMillis(),
-            createdAt = System.currentTimeMillis() - 86400000
+            createdAt = System.currentTimeMillis() - 86_400_000
         ),
         Todo(
             id = 3,
@@ -250,7 +248,7 @@ private fun TodoListContentPreview() {
             description = "",
             isCompleted = false,
             completedAt = null,
-            createdAt = System.currentTimeMillis() - 3600000
+            createdAt = System.currentTimeMillis() - 3_600_000
         )
     )
     SimpleTodoAppTheme(dynamicColor = false) {

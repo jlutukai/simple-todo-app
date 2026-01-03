@@ -1,4 +1,3 @@
 package com.lutukai.simpletodoapp.di
 
-object AppModule {
-}
+object AppModule

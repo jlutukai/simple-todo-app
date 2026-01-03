@@ -16,9 +16,8 @@ import kotlinx.coroutines.launch
  * @param Intent The user intent/action type
  * @param Effect The side effect type
  */
-abstract class MviViewModel<State : UiState, Intent : UiIntent, Effect : SideEffect>(
-    initialState: State
-) : ViewModel() {
+abstract class MviViewModel<State : UiState, Intent : UiIntent, Effect : SideEffect>(initialState: State) :
+    ViewModel() {
 
     private val _state = MutableStateFlow(initialState)
     val state: StateFlow<State> = _state.asStateFlow()

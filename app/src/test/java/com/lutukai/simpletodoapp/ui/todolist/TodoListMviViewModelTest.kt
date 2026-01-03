@@ -54,11 +54,7 @@ class TodoListMviViewModelTest {
         insertTodoUseCase
     )
 
-    private fun createTodo(
-        id: Long = 1L,
-        title: String = "Test Todo",
-        isCompleted: Boolean = false
-    ) = Todo(
+    private fun createTodo(id: Long = 1L, title: String = "Test Todo", isCompleted: Boolean = false) = Todo(
         id = id,
         title = title,
         description = "Test Description",

@@ -87,8 +87,8 @@ class TodoDaoTest {
             .test()
             .assertValue { todos ->
                 todos.size == 2 &&
-                todos.any { it.title == "Todo 1" } &&
-                todos.any { it.title == "Todo 2" }
+                    todos.any { it.title == "Todo 1" } &&
+                    todos.any { it.title == "Todo 2" }
             }
     }
 
@@ -285,13 +285,11 @@ class TodoDaoTest {
         isCompleted: Boolean = false,
         completedAt: Long? = null,
         createdAt: Long = System.currentTimeMillis()
-    ): TodoEntity {
-        return TodoEntity(
-            title = title,
-            description = description,
-            isCompleted = isCompleted,
-            completedAt = completedAt,
-            createdAt = createdAt
-        )
-    }
+    ): TodoEntity = TodoEntity(
+        title = title,
+        description = description,
+        isCompleted = isCompleted,
+        completedAt = completedAt,
+        createdAt = createdAt
+    )
 }

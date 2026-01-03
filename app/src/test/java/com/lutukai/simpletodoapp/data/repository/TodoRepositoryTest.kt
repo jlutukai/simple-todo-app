@@ -202,16 +202,14 @@ class TodoRepositoryTest {
         isCompleted: Boolean = false,
         completedAt: Long? = null,
         createdAt: Long = System.currentTimeMillis()
-    ): TodoEntity {
-        return TodoEntity(
-            id = id,
-            title = title,
-            description = description,
-            isCompleted = isCompleted,
-            completedAt = completedAt,
-            createdAt = createdAt
-        )
-    }
+    ): TodoEntity = TodoEntity(
+        id = id,
+        title = title,
+        description = description,
+        isCompleted = isCompleted,
+        completedAt = completedAt,
+        createdAt = createdAt
+    )
 
     private fun createDomainTodo(
         id: Long = 0,
@@ -220,14 +218,12 @@ class TodoRepositoryTest {
         isCompleted: Boolean = false,
         completedAt: Long? = null,
         createdAt: Long = System.currentTimeMillis()
-    ): Todo {
-        return Todo(
-            id = id,
-            title = title,
-            description = description,
-            isCompleted = isCompleted,
-            completedAt = completedAt,
-            createdAt = createdAt
-        )
-    }
+    ): Todo = Todo(
+        id = id,
+        title = title,
+        description = description,
+        isCompleted = isCompleted,
+        completedAt = completedAt,
+        createdAt = createdAt
+    )
 }

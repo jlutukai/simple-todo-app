@@ -45,11 +45,7 @@ class InsertTodoUseCaseTest {
         assertThat((result as Result.Failure).message).isEqualTo("Insert failed")
     }
 
-    private fun createTodo(
-        id: Long? = null,
-        title: String,
-        isCompleted: Boolean = false
-    ) = Todo(
+    private fun createTodo(id: Long? = null, title: String, isCompleted: Boolean = false) = Todo(
         id = id,
         title = title,
         description = "",
