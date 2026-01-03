@@ -12,18 +12,23 @@ plugins {
     id("jacoco")
 }
 
+// Local development defaults - CI will override via environment variables
+val localVersionName = "0.0.1-local"
+val localVersionCode = 1
+
+val versionNameFromEnv: String = System.getenv("VERSION_NAME") ?: localVersionName
+val versionCodeFromEnv: Int = System.getenv("VERSION_CODE")?.toIntOrNull() ?: localVersionCode
+
 android {
     namespace = "com.lutukai.simpletodoapp"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {
         applicationId = "com.lutukai.simpletodoapp"
-        minSdk = 23
-        targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        minSdk = libs.versions.minSdk.get().toInt()
+        targetSdk = libs.versions.targetSdk.get().toInt()
+        versionCode = versionCodeFromEnv
+        versionName = versionNameFromEnv
 
         testInstrumentationRunner = "com.lutukai.simpletodoapp.HiltTestRunner"
     }
@@ -31,9 +36,18 @@ android {
     buildTypes {
         debug {
             enableUnitTestCoverage = true
+            versionNameSuffix = "-snapshot"
+            applicationIdSuffix = ".debug"
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
