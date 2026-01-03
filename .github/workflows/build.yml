@@ -84,3 +84,13 @@ jobs:
           name: apk-${{ steps.version.outputs.VERSION_NAME }}
           path: app/build/outputs/apk/**/app-*.apk
           retention-days: 14
+
+ - name: Create GitHub Release
+    uses: softprops/action-gh-release@v1
+       with:
+            files: app/build/outputs/apk/**/app-*.apk
+                 tag_name: ${{ github.ref_name }}
+                      draft: false
+                           prerelease: false
+                              env:
+                                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
