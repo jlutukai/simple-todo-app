@@ -1,5 +1,8 @@
 [versions]
 agp = "8.13.2"
+compileSdk = "36"
+minSdk = "23"
+targetSdk = "36"
 hiltAndroid = "2.57.2"
 kotlin = "2.2.21"
 ksp = "2.2.21-2.0.4"

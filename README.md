@@ -120,6 +120,69 @@ Pre-commit and pre-push hooks automatically run `spotlessApply` (auto-fix format
 | `.editorconfig` | Editor settings (UTF-8, 4-space indent, 120 char lines) |
 | `config/detekt/detekt.yml` | Detekt rules with zero-tolerance policy |
 
+## CI/CD
+
+GitHub Actions automates code quality checks and release builds.
+
+### Workflows
+
+| Workflow | File | Trigger | Purpose |
+|----------|------|---------|---------|
+| PR Check | `.github/workflows/pr.yml` | Pull requests to `main` | Code quality gates |
+| Build | `.github/workflows/build.yml` | Tags matching `v*` | Release APK builds |
+
+### PR Check Workflow
+
+Runs on every pull request to `main`:
+
+1. Checkout code
+2. Set up JDK 17 (Temurin)
+3. Setup Gradle with caching
+4. `./gradlew spotlessCheck` - Verify formatting
+5. `./gradlew detekt` - Static analysis
+6. `./gradlew testDebugUnitTest` - Unit tests
+
+### Build/Release Workflow
+
+Triggered by version tags (e.g., `v1.2.3`):
+
+- **Access**: Restricted access
+- **Version calculation**: Tag `v1.2.3` → versionName `1.2.3`, versionCode `10203`
+- **Steps**: Quality checks → Build release APK → Upload artifact (14-day retention)
+
+### Development Workflow
+
+```
+Feature Branch → Commit → Push → PR → Merge → Tag → Release
+     │            │        │      │              │
+     │         pre-commit  │      │              │
+     │         (spotless   │      │              │
+     │          + detekt)  │      │              │
+     │                     │      │              │
+     │                 pre-push   │              │
+     │                 (spotless  │              │
+     │                  + detekt) │              │
+     │                            │              │
+     │                      PR Check             │
+     │                      Workflow             │
+     │                      (spotless,           │
+     │                       detekt,             │
+     │                       tests)              │
+     │                                           │
+     │                                    Build Workflow
+     │                                    (git tag v*)
+     │                                    → Release APK
+```
+
+**Steps:**
+1. **Create feature branch**: `git checkout -b feature/my-feature`
+2. **Make changes & commit**: Pre-commit hook auto-fixes formatting, runs detekt
+3. **Push to remote**: Pre-push hook validates code quality
+4. **Create PR to `main`**: PR Check workflow runs (Spotless, Detekt, tests)
+5. **Merge to `main`**: Code lands on main branch
+6. **Create release tag**: `git tag v1.2.3 && git push origin v1.2.3`
+7. **Build workflow**: Validates tag, builds release APK, uploads artifact
+
 ## App Architecture
 
 This app uses **Clean Architecture** with the **MVI (Model-View-Intent)** pattern. Read more about clean architecture [here](http://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html).
