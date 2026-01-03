@@ -42,13 +42,24 @@ cd SimpleTodoApp
 
 ## Testing
 
-Unit tests covering the data layer, domain use cases, and presentation layer.
+Comprehensive test coverage across all architecture layers (17 test files).
 
+### Test Stack
 * [JUnit 4](https://junit.org/junit4/) - Unit testing framework
 * [MockK](https://mockk.io/) - Kotlin-first mocking library
 * [Turbine](https://github.com/cashapp/turbine) - Flow testing library
 * [Truth](https://truth.dev/) - Fluent assertions library (Google)
 * [Robolectric](http://robolectric.org/) - JVM-based Android framework simulation
+* [Coroutines Test](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/) - StandardTestDispatcher for coroutine testing
+
+### Test Coverage
+
+| Layer | Tests | Description |
+|-------|-------|-------------|
+| **Presentation** | 3 ViewModel tests | TodoListMviViewModel, AddEditTodoMviViewModel, TodoDetailMviViewModel |
+| **Presentation** | 3 Compose UI tests | Screen content rendering with Robolectric |
+| **Domain** | 7 Use Case tests | All use cases with Result handling |
+| **Data** | Repository + DAO tests | Database operations and error handling |
 
 ### Running Tests
 
@@ -58,6 +69,9 @@ Unit tests covering the data layer, domain use cases, and presentation layer.
 
 # Run instrumented tests (requires connected device/emulator)
 ./gradlew connectedAndroidTest
+
+# Run tests with coverage report
+./gradlew testDebugUnitTestCoverage
 ```
 
 ## App Architecture
@@ -84,6 +98,67 @@ Components involved in rendering information to the user using MVI pattern.
 * **MVI Framework**: Custom implementation with MviContract, MviViewModel, and MviExtensions.
 * **Screens**: TodoListScreen, AddEditTodoScreen, TodoDetailScreen.
 * **ViewModels**: StateFlow for state management, Channel for one-time side effects.
+* **Components**: Atomic Design pattern with reusable atoms, molecules, and organisms.
+
+### 4. Error Handling
+Custom `Result<T>` sealed class for type-safe error handling across all layers.
+
+```kotlin
+sealed class Result<out T> {
+    data class Success<out T>(val data: T) : Result<T>()
+    data class Failure(val exception: Throwable, val message: String) : Result<Nothing>()
+}
+
+// Usage with safeCall wrapper
+suspend fun <T> safeCall(dispatcher: CoroutineDispatcher, block: suspend () -> T): Result<T>
+```
+
+### 5. MVI Framework Details
+The MVI implementation provides unidirectional data flow with three core components:
+
+```kotlin
+// Base ViewModel with generics for type-safe state management
+abstract class MviViewModel<State : UiState, Intent : UiIntent, Effect : SideEffect>(
+    initialState: State
+) : ViewModel() {
+    val state: StateFlow<State>           // Reactive UI state
+    val effect: Flow<Effect>              // One-time side effects (navigation, snackbars)
+
+    fun onIntent(intent: Intent)          // Process user actions
+    protected fun updateState(reducer: State.() -> State)  // Immutable state updates
+    protected fun sendEffect(effect: Effect)               // Emit side effects
+}
+```
+
+**Compose Extensions** (`MviExtensions.kt`):
+* `collectState()` - Lifecycle-aware state collection
+* `rememberOnIntent()` - Stable intent handler for Compose
+* `ObserveAsEvents()` - Side effect observer with proper lifecycle handling
+
+### 6. Navigation
+Type-safe navigation using Kotlin Serialization with compile-time route verification:
+
+```kotlin
+@Serializable
+sealed interface NavRoute {
+    @Serializable data object TodoList : NavRoute
+    @Serializable data class TodoDetail(val todoId: Long) : NavRoute
+    @Serializable data class AddEditTodo(val todoId: Long? = null) : NavRoute
+}
+```
+
+Detail and AddEdit screens use dialog-based navigation for modal bottom sheet presentation.
+
+### 7. Dependency Injection
+Hilt modules organized by responsibility:
+
+| Module | Scope | Provides |
+|--------|-------|----------|
+| DatabaseModule | Singleton | Room database, TodoDao |
+| RepositoryModule | Singleton | TodoRepository binding |
+| DispatcherModule | Singleton | Coroutine dispatchers (IO, Main, Default) |
+
+Custom `@Dispatcher` qualifier annotation for injecting specific coroutine dispatchers.
 
 ## App Screenshots
 

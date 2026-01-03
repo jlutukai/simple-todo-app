@@ -1,9 +1,7 @@
-package com.lutukai.simpletodoapp.ui.tododetail
+package com.lutukai.simpletodoapp.ui.features.tododetail
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -14,14 +12,10 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -38,6 +32,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.lutukai.simpletodoapp.ui.util.TestTags
 import com.lutukai.simpletodoapp.R
 import com.lutukai.simpletodoapp.domain.models.Todo
+import com.lutukai.simpletodoapp.ui.components.molecules.KeyValueRow
+import com.lutukai.simpletodoapp.ui.components.molecules.LabeledSwitch
+import com.lutukai.simpletodoapp.ui.components.molecules.ModalIconHeader
+import com.lutukai.simpletodoapp.ui.components.molecules.SectionHeader
+import com.lutukai.simpletodoapp.ui.components.molecules.primaryIconButton
+import com.lutukai.simpletodoapp.ui.components.molecules.secondaryIconButton
 import com.lutukai.simpletodoapp.ui.mvi.ObserveAsEvents
 import com.lutukai.simpletodoapp.ui.mvi.collectState
 import com.lutukai.simpletodoapp.ui.mvi.rememberOnIntent
@@ -100,34 +100,21 @@ internal fun TodoDetailContent(
             .fillMaxWidth()
             .padding(bottom = 32.dp)
     ) {
-        // Toolbar
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            IconButton(
+        // Toolbar - using reusable ModalIconHeader
+        ModalIconHeader(
+            leadingIcon = primaryIconButton(
+                icon = Icons.Default.Edit,
                 onClick = { onIntent(TodoDetailIntent.EditClicked) },
+                contentDescription = stringResource(R.string.cd_edit_task),
                 modifier = Modifier.testTag(TestTags.DETAIL_EDIT_BUTTON)
-            ) {
-                Icon(
-                    Icons.Default.Edit,
-                    contentDescription = stringResource(R.string.cd_edit_task),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-            IconButton(
+            ),
+            trailingIcon = secondaryIconButton(
+                icon = Icons.Default.Close,
                 onClick = { onIntent(TodoDetailIntent.Dismiss) },
+                contentDescription = stringResource(R.string.cd_close),
                 modifier = Modifier.testTag(TestTags.DETAIL_CLOSE_BUTTON)
-            ) {
-                Icon(
-                    Icons.Default.Close,
-                    contentDescription = stringResource(R.string.cd_close),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
+            )
+        )
 
         if (state.isLoading) {
             Box(
@@ -152,38 +139,23 @@ internal fun TodoDetailContent(
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
-                // Completion Toggle
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = stringResource(R.string.mark_complete),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Switch(
-                        checked = todo.isCompleted,
-                        onCheckedChange = { onIntent(TodoDetailIntent.ToggleComplete(it)) },
-                        modifier = Modifier.testTag(TestTags.DETAIL_COMPLETED_SWITCH)
-                    )
-                }
+                // Completion Toggle - using reusable LabeledSwitch
+                LabeledSwitch(
+                    label = stringResource(R.string.mark_complete),
+                    checked = todo.isCompleted,
+                    onCheckedChange = { onIntent(TodoDetailIntent.ToggleComplete(it)) },
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    switchModifier = Modifier.testTag(TestTags.DETAIL_COMPLETED_SWITCH)
+                )
 
                 HorizontalDivider(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     color = MaterialTheme.colorScheme.outlineVariant
                 )
 
-                // Notes Section
-                Text(
-                    text = stringResource(R.string.notes),
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                // Notes Section - using reusable SectionHeader
+                SectionHeader(title = stringResource(R.string.notes))
+
                 Text(
                     text = todo.description.ifEmpty { "-" },
                     modifier = Modifier
@@ -195,42 +167,18 @@ internal fun TodoDetailContent(
 
                 HorizontalDivider(modifier = Modifier.padding(16.dp))
 
-                // Metadata
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = stringResource(R.string.created_on),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = todo.createdAt?.let { dateFormat.format(Date(it)) } ?: "-",
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
+                // Metadata - using reusable KeyValueRow
+                KeyValueRow(
+                    label = stringResource(R.string.created_on),
+                    value = todo.createdAt?.let { dateFormat.format(Date(it)) } ?: "-"
+                )
 
                 if (todo.isCompleted && todo.completedAt != null) {
                     Spacer(modifier = Modifier.height(4.dp))
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = stringResource(R.string.completed_on),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = dateFormat.format(Date(todo.completedAt)),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
+                    KeyValueRow(
+                        label = stringResource(R.string.completed_on),
+                        value = dateFormat.format(Date(todo.completedAt))
+                    )
                 }
             }
         }

@@ -1,4 +1,4 @@
-package com.lutukai.simpletodoapp.ui.addedittodo
+package com.lutukai.simpletodoapp.ui.features.addedittodo
 
 import androidx.compose.runtime.Stable
 import com.lutukai.simpletodoapp.domain.models.Todo

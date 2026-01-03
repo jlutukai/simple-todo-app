@@ -1,4 +1,4 @@
-package com.lutukai.simpletodoapp.ui.tododetail
+package com.lutukai.simpletodoapp.ui.features.tododetail
 
 import com.lutukai.simpletodoapp.domain.usecases.GetTodoByIdUseCase
 import com.lutukai.simpletodoapp.domain.usecases.UpdateTodoUseCase

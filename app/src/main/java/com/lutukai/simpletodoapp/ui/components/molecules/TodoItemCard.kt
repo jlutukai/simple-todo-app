@@ -1,4 +1,4 @@
-package com.lutukai.simpletodoapp.ui.todolist
+package com.lutukai.simpletodoapp.ui.components.molecules
 
 import com.lutukai.simpletodoapp.ui.util.debouncedClickable
 import androidx.compose.foundation.layout.Row
@@ -27,8 +27,18 @@ import com.lutukai.simpletodoapp.domain.models.Todo
 import com.lutukai.simpletodoapp.ui.preview.DevicePreviews
 import com.lutukai.simpletodoapp.ui.theme.SimpleTodoAppTheme
 
+/**
+ * A card component for displaying a single todo item with a checkbox,
+ * title, and delete button.
+ *
+ * @param todo The todo item to display
+ * @param onToggleComplete Callback invoked when the checkbox is toggled
+ * @param onDelete Callback invoked when the delete button is clicked
+ * @param onClick Callback invoked when the card is clicked
+ * @param modifier Modifier to be applied to the component
+ */
 @Composable
-fun TodoItem(
+fun TodoItemCard(
     todo: Todo,
     onToggleComplete: (Todo) -> Unit,
     onDelete: (Todo) -> Unit,
@@ -91,9 +101,9 @@ fun TodoItem(
 
 @DevicePreviews
 @Composable
-private fun TodoItemPreview() {
+private fun TodoItemCardPreview() {
     SimpleTodoAppTheme(dynamicColor = false) {
-        TodoItem(
+        TodoItemCard(
             todo = Todo(
                 id = 1,
                 title = "Buy groceries",
@@ -111,9 +121,9 @@ private fun TodoItemPreview() {
 
 @DevicePreviews
 @Composable
-private fun TodoItemCompletedPreview() {
+private fun TodoItemCardCompletedPreview() {
     SimpleTodoAppTheme(dynamicColor = false) {
-        TodoItem(
+        TodoItemCard(
             todo = Todo(
                 id = 2,
                 title = "Finish project report",

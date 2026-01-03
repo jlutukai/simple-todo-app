@@ -1,45 +1,33 @@
-package com.lutukai.simpletodoapp.ui.addedittodo
+package com.lutukai.simpletodoapp.ui.features.addedittodo
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.lutukai.simpletodoapp.ui.util.TestTags
 import com.lutukai.simpletodoapp.R
+import com.lutukai.simpletodoapp.ui.components.atoms.PrimaryButton
+import com.lutukai.simpletodoapp.ui.components.molecules.LabeledSwitch
+import com.lutukai.simpletodoapp.ui.components.molecules.LabeledTextField
+import com.lutukai.simpletodoapp.ui.components.molecules.ModalHeader
+import com.lutukai.simpletodoapp.ui.components.molecules.ModalHeaderTextButton
 import com.lutukai.simpletodoapp.ui.mvi.ObserveAsEvents
 import com.lutukai.simpletodoapp.ui.mvi.collectState
 import com.lutukai.simpletodoapp.ui.mvi.rememberOnIntent
@@ -97,140 +85,72 @@ internal fun AddEditTodoContent(
             .fillMaxWidth()
             .padding(bottom = 32.dp)
     ) {
-        // Header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            TextButton(
-                onClick = { onIntent(AddEditTodoIntent.Cancel) },
-                modifier = Modifier.testTag(TestTags.ADD_EDIT_CANCEL_BUTTON)
-            ) {
-                Text(
+        // Header - using reusable ModalHeader component
+        ModalHeader(
+            title = stringResource(
+                if (state.isEditMode) R.string.edit_todo_title else R.string.add_todo_title
+            ),
+            leadingAction = {
+                ModalHeaderTextButton(
                     text = stringResource(R.string.cancel),
-                    color = MaterialTheme.colorScheme.primary
+                    onClick = { onIntent(AddEditTodoIntent.Cancel) },
+                    modifier = Modifier.testTag(TestTags.ADD_EDIT_CANCEL_BUTTON)
                 )
             }
-            Text(
-                text = stringResource(
-                    if (state.isEditMode) R.string.edit_todo_title else R.string.add_todo_title
-                ),
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(modifier = Modifier.width(48.dp)) // Balance the cancel button
-        }
+        )
 
         // Form Fields
         Column(modifier = Modifier.padding(16.dp)) {
-            // Title
-            Text(
-                text = stringResource(R.string.title_label),
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            OutlinedTextField(
+            // Title field - using reusable LabeledTextField
+            LabeledTextField(
+                label = stringResource(R.string.title_label),
                 value = state.title,
                 onValueChange = { onIntent(AddEditTodoIntent.UpdateTitle(it)) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag(TestTags.ADD_EDIT_TITLE_FIELD),
-                placeholder = {
-                    Text(
-                        stringResource(R.string.title_placeholder),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                },
-                keyboardOptions = KeyboardOptions(
-                    capitalization = KeyboardCapitalization.Sentences
-                ),
+                placeholder = stringResource(R.string.title_placeholder),
                 singleLine = true,
-                shape = RoundedCornerShape(12.dp)
+                textFieldModifier = Modifier.testTag(TestTags.ADD_EDIT_TITLE_FIELD)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Description
-            Text(
-                text = stringResource(R.string.description_label),
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            OutlinedTextField(
+            // Description field - using reusable LabeledTextField
+            LabeledTextField(
+                label = stringResource(R.string.description_label),
                 value = state.description,
                 onValueChange = { onIntent(AddEditTodoIntent.UpdateDescription(it)) },
-                modifier = Modifier
-                    .fillMaxWidth()
+                placeholder = stringResource(R.string.description_placeholder),
+                singleLine = false,
+                minLines = 3,
+                textFieldModifier = Modifier
                     .heightIn(min = 100.dp)
-                    .testTag(TestTags.ADD_EDIT_DESCRIPTION_FIELD),
-                placeholder = {
-                    Text(
-                        stringResource(R.string.description_placeholder),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                },
-                keyboardOptions = KeyboardOptions(
-                    capitalization = KeyboardCapitalization.Sentences
-                ),
-                shape = RoundedCornerShape(12.dp)
+                    .testTag(TestTags.ADD_EDIT_DESCRIPTION_FIELD)
             )
 
-            // Completed Toggle (only in edit mode)
+            // Completed Toggle (only in edit mode) - using reusable LabeledSwitch
             if (state.isEditMode) {
                 Spacer(modifier = Modifier.height(16.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = stringResource(R.string.completed_label),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Switch(
-                        checked = state.isCompleted,
-                        onCheckedChange = { onIntent(AddEditTodoIntent.UpdateCompleted(it)) },
-                        modifier = Modifier.testTag(TestTags.ADD_EDIT_COMPLETED_SWITCH)
-                    )
-                }
+                LabeledSwitch(
+                    label = stringResource(R.string.completed_label),
+                    checked = state.isCompleted,
+                    onCheckedChange = { onIntent(AddEditTodoIntent.UpdateCompleted(it)) },
+                    switchModifier = Modifier.testTag(TestTags.ADD_EDIT_COMPLETED_SWITCH)
+                )
             }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Save Button
-        Button(
+        // Save Button - using reusable PrimaryButton
+        PrimaryButton(
+            text = stringResource(R.string.save),
             onClick = { onIntent(AddEditTodoIntent.SaveTodo) },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
-                .height(56.dp)
                 .testTag(TestTags.ADD_EDIT_SAVE_BUTTON),
             enabled = state.isSaveEnabled,
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary
-            )
-        ) {
-            if (state.isLoading) {
-                CircularProgressIndicator(
-                    color = Color.White,
-                    modifier = Modifier.size(24.dp)
-                )
-            } else {
-                Text(
-                    text = stringResource(R.string.save),
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
+            isLoading = state.isLoading
+        )
 
         SnackbarHost(hostState = snackbarHostState)
     }

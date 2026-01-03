@@ -1,4 +1,4 @@
-package com.lutukai.simpletodoapp.ui.todolist
+package com.lutukai.simpletodoapp.ui.features.todolist
 
 import androidx.compose.runtime.Stable
 import com.lutukai.simpletodoapp.domain.models.Todo
