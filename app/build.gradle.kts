@@ -9,6 +9,7 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.spotless)
     alias(libs.plugins.detekt)
+    alias(libs.plugins.room)
     id("jacoco")
 }
 
@@ -87,6 +88,10 @@ android {
 composeCompiler {
     // StrongSkipping is enabled by default in Compose compiler 2.0+
     reportsDestination = layout.buildDirectory.dir("compose_compiler")
+}
+
+room {
+    schemaDirectory("$projectDir/schemas")
 }
 
 dependencies {

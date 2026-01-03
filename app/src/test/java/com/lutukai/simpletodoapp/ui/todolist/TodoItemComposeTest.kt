@@ -10,6 +10,7 @@ import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import com.lutukai.simpletodoapp.ui.TestTodoFactory
+import com.lutukai.simpletodoapp.ui.components.molecules.TodoItemCard
 import com.lutukai.simpletodoapp.ui.theme.SimpleTodoAppTheme
 import com.lutukai.simpletodoapp.ui.util.TestTags
 import org.junit.Rule
@@ -30,7 +31,7 @@ class TodoItemComposeTest {
     fun `displays todo title`() {
         composeTestRule.setContent {
             SimpleTodoAppTheme(dynamicColor = false) {
-                TodoItem(
+                TodoItemCard(
                     todo = testTodo,
                     onToggleComplete = {},
                     onDelete = {},
@@ -48,7 +49,7 @@ class TodoItemComposeTest {
     fun `displays checkbox`() {
         composeTestRule.setContent {
             SimpleTodoAppTheme(dynamicColor = false) {
-                TodoItem(
+                TodoItemCard(
                     todo = testTodo,
                     onToggleComplete = {},
                     onDelete = {},
@@ -66,7 +67,7 @@ class TodoItemComposeTest {
     fun `checkbox is unchecked when todo not completed`() {
         composeTestRule.setContent {
             SimpleTodoAppTheme(dynamicColor = false) {
-                TodoItem(
+                TodoItemCard(
                     todo = testTodo.copy(isCompleted = false),
                     onToggleComplete = {},
                     onDelete = {},
@@ -84,7 +85,7 @@ class TodoItemComposeTest {
     fun `checkbox is checked when todo completed`() {
         composeTestRule.setContent {
             SimpleTodoAppTheme(dynamicColor = false) {
-                TodoItem(
+                TodoItemCard(
                     todo = testTodo.copy(isCompleted = true),
                     onToggleComplete = {},
                     onDelete = {},
@@ -104,7 +105,7 @@ class TodoItemComposeTest {
 
         composeTestRule.setContent {
             SimpleTodoAppTheme(dynamicColor = false) {
-                TodoItem(
+                TodoItemCard(
                     todo = testTodo,
                     onToggleComplete = { toggleCalled = true },
                     onDelete = {},
@@ -126,7 +127,7 @@ class TodoItemComposeTest {
 
         composeTestRule.setContent {
             SimpleTodoAppTheme(dynamicColor = false) {
-                TodoItem(
+                TodoItemCard(
                     todo = testTodo,
                     onToggleComplete = {},
                     onDelete = { deleteCalled = true },
@@ -148,7 +149,7 @@ class TodoItemComposeTest {
 
         composeTestRule.setContent {
             SimpleTodoAppTheme(dynamicColor = false) {
-                TodoItem(
+                TodoItemCard(
                     todo = testTodo,
                     onToggleComplete = {},
                     onDelete = {},

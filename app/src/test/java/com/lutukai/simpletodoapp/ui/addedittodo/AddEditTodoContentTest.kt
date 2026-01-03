@@ -10,6 +10,9 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
+import com.lutukai.simpletodoapp.ui.features.addedittodo.AddEditTodoContent
+import com.lutukai.simpletodoapp.ui.features.addedittodo.AddEditTodoIntent
+import com.lutukai.simpletodoapp.ui.features.addedittodo.AddEditTodoState
 import com.lutukai.simpletodoapp.ui.theme.SimpleTodoAppTheme
 import com.lutukai.simpletodoapp.ui.util.TestTags
 import org.junit.Rule

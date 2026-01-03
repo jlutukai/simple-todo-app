@@ -5,6 +5,9 @@ import com.google.common.truth.Truth.assertThat
 import com.lutukai.simpletodoapp.domain.models.Todo
 import com.lutukai.simpletodoapp.domain.usecases.GetTodoByIdUseCase
 import com.lutukai.simpletodoapp.domain.usecases.UpdateTodoUseCase
+import com.lutukai.simpletodoapp.ui.features.tododetail.TodoDetailIntent
+import com.lutukai.simpletodoapp.ui.features.tododetail.TodoDetailMviViewModel
+import com.lutukai.simpletodoapp.ui.features.tododetail.TodoDetailSideEffect
 import com.lutukai.simpletodoapp.util.Result
 import io.mockk.coEvery
 import io.mockk.coVerify

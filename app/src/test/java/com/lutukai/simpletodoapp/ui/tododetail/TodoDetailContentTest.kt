@@ -11,6 +11,9 @@ import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import com.lutukai.simpletodoapp.ui.TestTodoFactory
+import com.lutukai.simpletodoapp.ui.features.tododetail.TodoDetailContent
+import com.lutukai.simpletodoapp.ui.features.tododetail.TodoDetailIntent
+import com.lutukai.simpletodoapp.ui.features.tododetail.TodoDetailState
 import com.lutukai.simpletodoapp.ui.theme.SimpleTodoAppTheme
 import com.lutukai.simpletodoapp.ui.util.TestTags
 import org.junit.Rule

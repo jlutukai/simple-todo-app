@@ -9,6 +9,9 @@ import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import com.lutukai.simpletodoapp.ui.TestTodoFactory
+import com.lutukai.simpletodoapp.ui.features.todolist.TodoListContent
+import com.lutukai.simpletodoapp.ui.features.todolist.TodoListIntent
+import com.lutukai.simpletodoapp.ui.features.todolist.TodoListState
 import com.lutukai.simpletodoapp.ui.theme.SimpleTodoAppTheme
 import com.lutukai.simpletodoapp.ui.util.TestTags
 import org.junit.Rule
