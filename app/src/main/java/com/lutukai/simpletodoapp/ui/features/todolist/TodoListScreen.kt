@@ -158,6 +158,12 @@ internal fun TodoListContent(state: TodoListState, onIntent: (TodoListIntent) ->
                     TodoListState.TodoFilter.ALL -> stringResource(R.string.tab_all)
                     TodoListState.TodoFilter.COMPLETED -> stringResource(R.string.tab_completed)
                 }
+            },
+            itemTestTag = { filter ->
+                when (filter) {
+                    TodoListState.TodoFilter.ALL -> TestTags.TAB_ALL
+                    TodoListState.TodoFilter.COMPLETED -> TestTags.TAB_COMPLETED
+                }
             }
         )
 

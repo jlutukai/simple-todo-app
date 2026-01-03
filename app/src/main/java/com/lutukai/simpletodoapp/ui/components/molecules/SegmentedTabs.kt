@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -62,7 +63,7 @@ fun <T> SegmentedTabs(
                     .padding(vertical = 10.dp)
                     .let { mod ->
                         itemTestTag?.let { tagFn ->
-                            mod.then(Modifier)
+                            mod.testTag(tagFn(item))
                         } ?: mod
                     },
                 contentAlignment = Alignment.Center
