@@ -52,8 +52,11 @@ fun <T> SegmentedTabs(
                     .weight(1f)
                     .clip(RoundedCornerShape(8.dp))
                     .background(
-                        if (isSelected) MaterialTheme.colorScheme.surface
-                        else Color.Transparent
+                        if (isSelected) {
+                            MaterialTheme.colorScheme.surface
+                        } else {
+                            Color.Transparent
+                        }
                     )
                     .clickable { onItemSelected(item) }
                     .padding(vertical = 10.dp)

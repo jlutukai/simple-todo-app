@@ -5,10 +5,6 @@ import com.lutukai.simpletodoapp.domain.repository.TodoRepository
 import com.lutukai.simpletodoapp.util.Result
 import javax.inject.Inject
 
-class UpdateTodoUseCase @Inject constructor(
-    private val repository: TodoRepository
-) {
-    suspend operator fun invoke(todo: Todo): Result<Unit> {
-        return repository.updateTodo(todo)
-    }
+class UpdateTodoUseCase @Inject constructor(private val repository: TodoRepository) {
+    suspend operator fun invoke(todo: Todo): Result<Unit> = repository.updateTodo(todo)
 }

@@ -24,15 +24,12 @@ fun <S : UiState> MviViewModel<S, *, *>.collectState(): S {
     return state
 }
 
-
 /**
  * Creates a stable event channel for dispatching events.
  * Returns a stable lambda reference that won't cause recompositions.
  */
 @Composable
-fun <T> rememberEventChannel(
-    onEvent: (T) -> Unit
-): (T) -> Unit {
+fun <T> rememberEventChannel(onEvent: (T) -> Unit): (T) -> Unit {
     val channel = remember { Channel<T>(Channel.BUFFERED) }
     val currentHandler by rememberUpdatedState(onEvent)
 
@@ -47,25 +44,19 @@ fun <T> rememberEventChannel(
  * Convenience extension for MviViewModel to get a stable intent handler.
  */
 @Composable
-fun <S : UiState, I : UiIntent, E : SideEffect> MviViewModel<S, I, E>.rememberOnIntent(): (I) -> Unit {
-    return rememberEventChannel { intent -> onIntent(intent) }
-}
-
+fun <S : UiState, I : UiIntent, E : SideEffect> MviViewModel<S, I, E>.rememberOnIntent(): (
+    I
+) -> Unit =
+    rememberEventChannel { intent -> onIntent(intent) }
 
 @Composable
-fun <T> ObserveAsEvents(
-    flow: Flow<T>,
-    key1: Any? = null,
-    key2: Any? = null,
-    onEvent: suspend (T) -> Unit
-){
+fun <T> ObserveAsEvents(flow: Flow<T>, key1: Any? = null, key2: Any? = null, onEvent: suspend (T) -> Unit) {
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(lifecycleOwner, key1, key2) {
-        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED){
-            withContext(Dispatchers.Main.immediate){
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            withContext(Dispatchers.Main.immediate) {
                 flow.collect { onEvent(it) }
             }
         }
     }
 }
-

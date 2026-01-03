@@ -8,10 +8,10 @@ import com.lutukai.simpletodoapp.domain.usecases.InsertTodoUseCase
 import com.lutukai.simpletodoapp.domain.usecases.ToggleTodoCompleteUseCase
 import com.lutukai.simpletodoapp.ui.mvi.MviViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @HiltViewModel
 class TodoListMviViewModel @Inject constructor(

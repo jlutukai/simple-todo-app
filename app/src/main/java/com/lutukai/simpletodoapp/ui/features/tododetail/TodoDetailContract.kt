@@ -7,11 +7,7 @@ import com.lutukai.simpletodoapp.ui.mvi.UiIntent
 import com.lutukai.simpletodoapp.ui.mvi.UiState
 
 @Stable
-data class TodoDetailState(
-    val todo: Todo? = null,
-    val isLoading: Boolean = false,
-    val error: String? = null
-) : UiState
+data class TodoDetailState(val todo: Todo? = null, val isLoading: Boolean = false, val error: String? = null) : UiState
 
 sealed interface TodoDetailIntent : UiIntent {
     data class LoadTodo(val todoId: Long) : TodoDetailIntent

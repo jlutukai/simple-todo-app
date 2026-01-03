@@ -70,11 +70,7 @@ fun ModalHeader(
  * @param modifier Modifier to be applied to the button
  */
 @Composable
-fun ModalHeaderTextButton(
-    text: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
+fun ModalHeaderTextButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     TextButton(
         onClick = onClick,
         modifier = modifier

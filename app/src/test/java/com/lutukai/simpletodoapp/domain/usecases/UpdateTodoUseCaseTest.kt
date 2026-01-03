@@ -45,11 +45,7 @@ class UpdateTodoUseCaseTest {
         assertThat((result as Result.Failure).message).isEqualTo("Update failed")
     }
 
-    private fun createTodo(
-        id: Long,
-        title: String,
-        isCompleted: Boolean = false
-    ) = Todo(
+    private fun createTodo(id: Long, title: String, isCompleted: Boolean = false) = Todo(
         id = id,
         title = title,
         description = "",

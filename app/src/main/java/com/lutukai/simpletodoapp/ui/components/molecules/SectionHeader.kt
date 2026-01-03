@@ -16,10 +16,7 @@ import androidx.compose.ui.unit.sp
  * @param modifier Modifier to be applied to the component
  */
 @Composable
-fun SectionHeader(
-    title: String,
-    modifier: Modifier = Modifier
-) {
+fun SectionHeader(title: String, modifier: Modifier = Modifier) {
     Text(
         text = title,
         modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp),

@@ -74,10 +74,12 @@ class MigrationTest {
     fun createDatabaseVersion1_canInsertData() {
         helper.createDatabase(TEST_DB, 1).apply {
             // Insert test data directly using SQL
-            execSQL("""
+            execSQL(
+                """
                 INSERT INTO todos (title, description, isCompleted, completedAt, createdAt)
                 VALUES ('Test Todo', 'Description', 0, NULL, ${System.currentTimeMillis()})
-            """.trimIndent())
+                """.trimIndent()
+            )
 
             // Verify data was inserted
             val cursor = query("SELECT COUNT(*) FROM todos")
@@ -94,14 +96,18 @@ class MigrationTest {
     fun createDatabaseVersion1_autoGeneratesPrimaryKey() {
         helper.createDatabase(TEST_DB, 1).apply {
             // Insert without specifying id
-            execSQL("""
+            execSQL(
+                """
                 INSERT INTO todos (title, description, isCompleted, completedAt, createdAt)
                 VALUES ('Todo 1', '', 0, NULL, 1000)
-            """.trimIndent())
-            execSQL("""
+                """.trimIndent()
+            )
+            execSQL(
+                """
                 INSERT INTO todos (title, description, isCompleted, completedAt, createdAt)
                 VALUES ('Todo 2', '', 0, NULL, 2000)
-            """.trimIndent())
+                """.trimIndent()
+            )
 
             // Verify IDs were auto-generated
             val cursor = query("SELECT id FROM todos ORDER BY id")
@@ -122,11 +128,9 @@ class MigrationTest {
      * Helper to get a migrated Room database for verification.
      * Use this after running migrations to verify data integrity.
      */
-    private fun getMigratedRoomDatabase(): AppDataBase {
-        return Room.databaseBuilder(
-            InstrumentationRegistry.getInstrumentation().targetContext,
-            AppDataBase::class.java,
-            TEST_DB
-        ).build()
-    }
+    private fun getMigratedRoomDatabase(): AppDataBase = Room.databaseBuilder(
+        InstrumentationRegistry.getInstrumentation().targetContext,
+        AppDataBase::class.java,
+        TEST_DB
+    ).build()
 }

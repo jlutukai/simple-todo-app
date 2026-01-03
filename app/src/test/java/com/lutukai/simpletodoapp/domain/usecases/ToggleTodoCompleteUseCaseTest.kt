@@ -42,7 +42,7 @@ class ToggleTodoCompleteUseCaseTest {
 
     @Test
     fun `invoke toggles complete todo to incomplete and clears timestamp`() = runTest {
-        val todo = createTodo(id = 1, title = "Test", isCompleted = true, completedAt = 12345L)
+        val todo = createTodo(id = 1, title = "Test", isCompleted = true, completedAt = 12_345L)
         coEvery { repository.updateTodo(any()) } returns Result.Success(Unit)
 
         val result = useCase(todo)
@@ -87,12 +87,7 @@ class ToggleTodoCompleteUseCaseTest {
         assertThat((result as Result.Failure).message).isEqualTo("Update failed")
     }
 
-    private fun createTodo(
-        id: Long,
-        title: String,
-        isCompleted: Boolean = false,
-        completedAt: Long? = null
-    ) = Todo(
+    private fun createTodo(id: Long, title: String, isCompleted: Boolean = false, completedAt: Long? = null) = Todo(
         id = id,
         title = title,
         description = "",

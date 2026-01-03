@@ -17,11 +17,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.platform.testTag
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.lutukai.simpletodoapp.ui.util.TestTags
 import com.lutukai.simpletodoapp.R
 import com.lutukai.simpletodoapp.ui.components.atoms.PrimaryButton
 import com.lutukai.simpletodoapp.ui.components.molecules.LabeledSwitch
@@ -33,14 +32,12 @@ import com.lutukai.simpletodoapp.ui.mvi.collectState
 import com.lutukai.simpletodoapp.ui.mvi.rememberOnIntent
 import com.lutukai.simpletodoapp.ui.preview.DevicePreviews
 import com.lutukai.simpletodoapp.ui.theme.SimpleTodoAppTheme
+import com.lutukai.simpletodoapp.ui.util.TestTags
+import com.lutukai.simpletodoapp.ui.util.showSnackbarWithAction
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddEditTodoScreen(
-    todoId: Long?,
-    onDismiss: () -> Unit,
-    viewModel: AddEditTodoMviViewModel = hiltViewModel()
-) {
+fun AddEditTodoScreen(todoId: Long?, onDismiss: () -> Unit, viewModel: AddEditTodoMviViewModel = hiltViewModel()) {
     val state = viewModel.collectState()
     val onIntent = viewModel.rememberOnIntent()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -54,7 +51,7 @@ fun AddEditTodoScreen(
         when (effect) {
             is AddEditTodoSideEffect.SaveSuccess -> onDismiss()
             is AddEditTodoSideEffect.ShowError -> {
-                snackbarHostState.showSnackbar(effect.message)
+                snackbarHostState.showSnackbarWithAction(message = effect.message)
             }
             is AddEditTodoSideEffect.Dismiss -> onDismiss()
         }

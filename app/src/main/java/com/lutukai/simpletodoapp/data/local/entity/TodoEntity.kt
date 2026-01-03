@@ -12,8 +12,8 @@ data class TodoEntity(
     val isCompleted: Boolean = false,
     val completedAt: Long?,
     val createdAt: Long = System.currentTimeMillis()
-){
-    companion object{
+) {
+    companion object {
         const val TODO_TABLE_NAME = "todos"
     }
 }

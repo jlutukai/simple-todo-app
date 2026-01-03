@@ -63,11 +63,7 @@ class GetAllTodosUseCaseTest {
         }
     }
 
-    private fun createTodo(
-        id: Long,
-        title: String,
-        isCompleted: Boolean = false
-    ) = Todo(
+    private fun createTodo(id: Long, title: String, isCompleted: Boolean = false) = Todo(
         id = id,
         title = title,
         description = "",

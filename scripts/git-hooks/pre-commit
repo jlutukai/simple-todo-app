@@ -1,0 +1,32 @@
+#!/bin/bash
+
+echo "Running pre-commit checks..."
+
+# Run Spotless with auto-fix
+echo "Checking and fixing code formatting with Spotless..."
+./gradlew spotlessApply --daemon --quiet
+
+if [ $? -ne 0 ]; then
+    echo ""
+    echo "❌ Spotless apply failed!"
+    echo ""
+    exit 1
+fi
+
+# Stage any formatting changes
+git add -u
+
+# Run Detekt
+echo "Running static analysis with Detekt..."
+./gradlew detekt --daemon --quiet
+
+if [ $? -ne 0 ]; then
+    echo ""
+    echo "❌ Detekt check failed!"
+    echo "Fix the issues reported above before committing."
+    echo ""
+    exit 1
+fi
+
+echo "✅ All pre-commit checks passed!"
+exit 0

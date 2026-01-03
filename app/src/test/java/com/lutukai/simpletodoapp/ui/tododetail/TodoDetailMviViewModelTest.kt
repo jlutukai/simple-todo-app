@@ -146,9 +146,11 @@ class TodoDetailMviViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         coVerify {
-            updateTodoUseCase(match {
-                it.id == 1L && it.isCompleted && it.completedAt != null
-            })
+            updateTodoUseCase(
+                match {
+                    it.id == 1L && it.isCompleted && it.completedAt != null
+                }
+            )
         }
         assertThat(viewModel.state.value.todo?.isCompleted).isTrue()
     }
@@ -167,9 +169,11 @@ class TodoDetailMviViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         coVerify {
-            updateTodoUseCase(match {
-                it.id == 1L && !it.isCompleted && it.completedAt == null
-            })
+            updateTodoUseCase(
+                match {
+                    it.id == 1L && !it.isCompleted && it.completedAt == null
+                }
+            )
         }
         assertThat(viewModel.state.value.todo?.isCompleted).isFalse()
     }

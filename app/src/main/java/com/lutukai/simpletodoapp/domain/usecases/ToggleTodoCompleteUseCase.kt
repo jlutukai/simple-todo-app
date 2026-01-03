@@ -5,9 +5,7 @@ import com.lutukai.simpletodoapp.domain.repository.TodoRepository
 import com.lutukai.simpletodoapp.util.Result
 import javax.inject.Inject
 
-class ToggleTodoCompleteUseCase @Inject constructor(
-    private val repository: TodoRepository
-) {
+class ToggleTodoCompleteUseCase @Inject constructor(private val repository: TodoRepository) {
     suspend operator fun invoke(todo: Todo): Result<Todo> {
         val newCompletedState = !todo.isCompleted
         val updatedTodo = todo.copy(

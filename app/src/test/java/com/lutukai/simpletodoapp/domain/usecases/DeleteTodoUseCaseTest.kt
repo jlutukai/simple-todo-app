@@ -45,11 +45,7 @@ class DeleteTodoUseCaseTest {
         assertThat((result as Result.Failure).message).isEqualTo("Delete failed")
     }
 
-    private fun createTodo(
-        id: Long,
-        title: String,
-        isCompleted: Boolean = false
-    ) = Todo(
+    private fun createTodo(id: Long, title: String, isCompleted: Boolean = false) = Todo(
         id = id,
         title = title,
         description = "",

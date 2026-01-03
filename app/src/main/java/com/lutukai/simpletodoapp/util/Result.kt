@@ -7,10 +7,8 @@ sealed class Result<out T> {
 
     data class Success<out T>(val data: T) : Result<T>()
 
-    data class Failure(
-        val exception: Throwable,
-        val message: String = exception.message ?: "Unknown error"
-    ) : Result<Nothing>()
+    data class Failure(val exception: Throwable, val message: String = exception.message ?: "Unknown error") :
+        Result<Nothing>()
 
     inline fun <R> map(transform: (T) -> R): Result<R> = when (this) {
         is Success -> Success(transform(data))
@@ -28,11 +26,10 @@ sealed class Result<out T> {
     }
 }
 
-suspend fun <T> safeCall(dispatcher: CoroutineDispatcher, block: suspend () -> T): Result<T> =
-    withContext(dispatcher) {
-        try {
-            Result.Success(block())
-        } catch (e: Exception) {
-            Result.Failure(e)
-        }
+suspend fun <T> safeCall(dispatcher: CoroutineDispatcher, block: suspend () -> T): Result<T> = withContext(dispatcher) {
+    try {
+        Result.Success(block())
+    } catch (e: Exception) {
+        Result.Failure(e)
     }
+}

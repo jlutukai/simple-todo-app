@@ -7,6 +7,8 @@ plugins {
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.spotless)
+    alias(libs.plugins.detekt)
     id("jacoco")
 }
 
@@ -43,10 +45,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlin {
-       compilerOptions{
-           jvmTarget.set(JvmTarget.JVM_17)
-           freeCompilerArgs.add("-XXLanguage:+PropertyParamAnnotationDefaultTargetMode")
-       }
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+            freeCompilerArgs.add("-XXLanguage:+PropertyParamAnnotationDefaultTargetMode")
+        }
     }
     buildFeatures {
         compose = true
@@ -152,7 +154,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
 
-    //Hilt
+    // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)
 
@@ -175,9 +177,14 @@ tasks.register<JacocoReport>("jacocoTestReport") {
     }
 
     val fileFilter = listOf(
-        "**/R.class", "**/R$*.class", "**/BuildConfig.*",
-        "**/Manifest*.*", "**/*Test*.*", "**/Hilt_*.*",
-        "**/*_Factory.*", "**/*_MembersInjector.*"
+        "**/R.class",
+        "**/R$*.class",
+        "**/BuildConfig.*",
+        "**/Manifest*.*",
+        "**/*Test*.*",
+        "**/Hilt_*.*",
+        "**/*_Factory.*",
+        "**/*_MembersInjector.*"
     )
 
     val debugTree = fileTree("${project.layout.buildDirectory.get()}/tmp/kotlin-classes/debug") {
@@ -186,5 +193,53 @@ tasks.register<JacocoReport>("jacocoTestReport") {
 
     sourceDirectories.setFrom(files("src/main/java", "src/main/kotlin"))
     classDirectories.setFrom(files(debugTree))
-    executionData.setFrom(files("${project.layout.buildDirectory.get()}/outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec"))
+    executionData.setFrom(
+        files(
+            "${project.layout.buildDirectory.get()}/outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec"
+        )
+    )
+}
+
+// ============================================
+// Spotless Configuration (Code Formatting)
+// ============================================
+spotless {
+    kotlin {
+        target("src/**/*.kt")
+        ktlint(libs.versions.ktlint.get())
+            .editorConfigOverride(
+                mapOf(
+                    "ktlint_standard_no-wildcard-imports" to "disabled",
+                    "ktlint_function_naming_ignore_when_annotated_with" to "Composable,Test",
+                    "android" to "true"
+                )
+            )
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+    kotlinGradle {
+        target("*.gradle.kts")
+        ktlint(libs.versions.ktlint.get())
+    }
+}
+
+// Note: Run spotlessApply to auto-fix formatting issues
+// Run with --continue flag if you want spotlessCheck to not stop the build
+
+// ============================================
+// Detekt Configuration (Static Analysis)
+// ============================================
+detekt {
+    toolVersion = libs.versions.detekt.get()
+    config.setFrom("$rootDir/config/detekt/detekt.yml")
+    buildUponDefaultConfig = true
+    ignoreFailures = false
+    parallel = true
+}
+
+tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
+    reports {
+        html.required.set(true)
+        xml.required.set(true)
+    }
 }
