@@ -1,7 +1,5 @@
-package com.lutukai.simpletodoapp.ui.todolist
+package com.lutukai.simpletodoapp.ui.features.todolist
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,17 +12,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -35,7 +30,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -46,6 +40,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.lutukai.simpletodoapp.ui.util.TestTags
 import com.lutukai.simpletodoapp.R
 import com.lutukai.simpletodoapp.domain.models.Todo
+import com.lutukai.simpletodoapp.ui.components.molecules.SearchBar
+import com.lutukai.simpletodoapp.ui.components.molecules.SegmentedTabs
+import com.lutukai.simpletodoapp.ui.components.molecules.TodoItemCard
+import com.lutukai.simpletodoapp.ui.components.organisms.EmptyState
 import com.lutukai.simpletodoapp.ui.mvi.ObserveAsEvents
 import com.lutukai.simpletodoapp.ui.mvi.collectState
 import com.lutukai.simpletodoapp.ui.mvi.rememberOnIntent
@@ -139,18 +137,30 @@ internal fun TodoListContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Search Bar
+        // Search Bar - using reusable component
         SearchBar(
             query = state.searchQuery,
-            onQueryChange = { onIntent(TodoListIntent.UpdateSearchQuery(it)) }
+            onQueryChange = { onIntent(TodoListIntent.UpdateSearchQuery(it)) },
+            placeholder = stringResource(R.string.search_hint),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag(TestTags.SEARCH_BAR),
+            contentDescription = stringResource(R.string.cd_search)
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Filter Tabs
-        FilterTabs(
-            selectedFilter = state.filter,
-            onFilterSelected = { onIntent(TodoListIntent.UpdateFilter(it)) }
+        // Filter Tabs - using reusable component
+        SegmentedTabs(
+            items = TodoListState.TodoFilter.entries.toList(),
+            selectedItem = state.filter,
+            onItemSelected = { onIntent(TodoListIntent.UpdateFilter(it)) },
+            itemLabel = { filter ->
+                when (filter) {
+                    TodoListState.TodoFilter.ALL -> stringResource(R.string.tab_all)
+                    TodoListState.TodoFilter.COMPLETED -> stringResource(R.string.tab_completed)
+                }
+            }
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -168,7 +178,11 @@ internal fun TodoListContent(
                 }
             }
             state.filteredTodos.isEmpty() -> {
-                EmptyState(modifier = Modifier.testTag(TestTags.EMPTY_STATE))
+                EmptyState(
+                    title = stringResource(R.string.empty_title),
+                    subtitle = stringResource(R.string.empty_subtitle),
+                    modifier = Modifier.testTag(TestTags.EMPTY_STATE)
+                )
             }
             else -> {
                 TodoList(
@@ -178,87 +192,6 @@ internal fun TodoListContent(
                     onItemClick = { todo ->
                         todo.id?.let { onIntent(TodoListIntent.OpenTodoDetail(it)) }
                     }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SearchBar(
-    query: String,
-    onQueryChange: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    OutlinedTextField(
-        value = query,
-        onValueChange = onQueryChange,
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .testTag(TestTags.SEARCH_BAR),
-        placeholder = {
-            Text(
-                stringResource(R.string.search_hint),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        },
-        leadingIcon = {
-            Icon(
-                Icons.Default.Search,
-                contentDescription = stringResource(R.string.cd_search),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        },
-        singleLine = true,
-        shape = RoundedCornerShape(12.dp)
-    )
-}
-
-@Composable
-private fun FilterTabs(
-    selectedFilter: TodoListState.TodoFilter,
-    onFilterSelected: (TodoListState.TodoFilter) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(4.dp)
-    ) {
-        TodoListState.TodoFilter.entries.forEach { filter ->
-            val isSelected = filter == selectedFilter
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(
-                        if (isSelected) MaterialTheme.colorScheme.surface
-                        else Color.Transparent
-                    )
-                    .clickable { onFilterSelected(filter) }
-                    .padding(vertical = 10.dp)
-                    .testTag(
-                        when (filter) {
-                            TodoListState.TodoFilter.ALL -> TestTags.TAB_ALL
-                            TodoListState.TodoFilter.COMPLETED -> TestTags.TAB_COMPLETED
-                        }
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = when (filter) {
-                        TodoListState.TodoFilter.ALL -> stringResource(R.string.tab_all)
-                        TodoListState.TodoFilter.COMPLETED -> stringResource(R.string.tab_completed)
-                    },
-                    color = if (isSelected) {
-                        MaterialTheme.colorScheme.onSurface
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                    fontWeight = FontWeight.SemiBold
                 )
             }
         }
@@ -281,34 +214,11 @@ private fun TodoList(
             items = todos,
             key = { it.id ?: it.hashCode() }
         ) { todo ->
-            TodoItem(
+            TodoItemCard(
                 todo = todo,
                 onToggleComplete = onToggleComplete,
                 onDelete = onDelete,
                 onClick = onItemClick
-            )
-        }
-    }
-}
-
-@Composable
-private fun EmptyState(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = stringResource(R.string.empty_title),
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = stringResource(R.string.empty_subtitle),
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
             )
         }
     }
