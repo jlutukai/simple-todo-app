@@ -20,6 +20,12 @@ val localVersionCode = 1
 val versionNameFromEnv: String = System.getenv("VERSION_NAME") ?: localVersionName
 val versionCodeFromEnv: Int = System.getenv("VERSION_CODE")?.toIntOrNull() ?: localVersionCode
 
+// Release signing config from environment variables (set in CI)
+val keystoreFile: String? = System.getenv("KEYSTORE_FILE")
+val keystorePassword: String? = System.getenv("KEYSTORE_PASSWORD")
+val keyAlias: String? = System.getenv("KEY_ALIAS")
+val keyPassword: String? = System.getenv("KEY_PASSWORD")
+
 android {
     namespace = "com.lutukai.simpletodoapp"
     compileSdk = libs.versions.compileSdk.get().toInt()
@@ -32,6 +38,17 @@ android {
         versionName = versionNameFromEnv
 
         testInstrumentationRunner = "com.lutukai.simpletodoapp.HiltTestRunner"
+    }
+
+    signingConfigs {
+        if (keystoreFile != null && keystorePassword != null && keyAlias != null && keyPassword != null) {
+            create("release") {
+                storeFile = file(keystoreFile)
+                storePassword = keystorePassword
+                this.keyAlias = keyAlias
+                this.keyPassword = keyPassword
+            }
+        }
     }
 
     buildTypes {
@@ -53,6 +70,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfigs.findByName("release")?.let {
+                signingConfig = it
+            }
         }
     }
     compileOptions {

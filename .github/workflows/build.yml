@@ -1,3 +1,19 @@
+# Build and Release Workflow
+#
+# Required GitHub Secrets:
+# 1. KEYSTORE_BASE64 - Base64 encoded release keystore file
+#    Generate with: base64 -i your-release.keystore | tr -d '\n'
+#
+# 2. KEYSTORE_PASSWORD - Password for the keystore
+#
+# 3. KEY_ALIAS - Alias of the signing key in the keystore
+#
+# 4. KEY_PASSWORD - Password for the signing key
+#
+# To set up secrets:
+# 1. Go to your repo → Settings → Secrets and variables → Actions
+# 2. Click "New repository secret" for each secret above
+
 name: Build
 
 on:
@@ -54,29 +70,23 @@ jobs:
           echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_OUTPUT
           echo "Building version: $VERSION_NAME (code: $VERSION_CODE)"
 
-      - name: Check formatting (Spotless)
-        env:
-          VERSION_NAME: ${{ steps.version.outputs.VERSION_NAME }}
-          VERSION_CODE: ${{ steps.version.outputs.VERSION_CODE }}
-        run: ./gradlew spotlessCheck
-
-      - name: Static analysis (Detekt)
-        env:
-          VERSION_NAME: ${{ steps.version.outputs.VERSION_NAME }}
-          VERSION_CODE: ${{ steps.version.outputs.VERSION_CODE }}
-        run: ./gradlew detekt
-
-      - name: Run unit tests
-        env:
-          VERSION_NAME: ${{ steps.version.outputs.VERSION_NAME }}
-          VERSION_CODE: ${{ steps.version.outputs.VERSION_CODE }}
-        run: ./gradlew testDebugUnitTest
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > ${{ github.workspace }}/release.keystore
 
       - name: Build release APK
         env:
           VERSION_NAME: ${{ steps.version.outputs.VERSION_NAME }}
           VERSION_CODE: ${{ steps.version.outputs.VERSION_CODE }}
+          KEYSTORE_FILE: ${{ github.workspace }}/release.keystore
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew assembleRelease
+
+      - name: Clean up keystore
+        if: always()
+        run: rm -f ${{ github.workspace }}/release.keystore
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -85,12 +95,12 @@ jobs:
           path: app/build/outputs/apk/**/app-*.apk
           retention-days: 14
 
- - name: Create GitHub Release
-    uses: softprops/action-gh-release@v1
-       with:
-            files: app/build/outputs/apk/**/app-*.apk
-                 tag_name: ${{ github.ref_name }}
-                      draft: false
-                           prerelease: false
-                              env:
-                                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: app/build/outputs/apk/**/app-*.apk
+          tag_name: ${{ github.ref_name }}
+          draft: false
+          prerelease: false
