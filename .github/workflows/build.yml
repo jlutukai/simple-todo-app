@@ -1,19 +1,3 @@
-# Build and Release Workflow
-#
-# Required GitHub Secrets:
-# 1. KEYSTORE_BASE64 - Base64 encoded release keystore file
-#    Generate with: base64 -i your-release.keystore | tr -d '\n'
-#
-# 2. KEYSTORE_PASSWORD - Password for the keystore
-#
-# 3. KEY_ALIAS - Alias of the signing key in the keystore
-#
-# 4. KEY_PASSWORD - Password for the signing key
-#
-# To set up secrets:
-# 1. Go to your repo → Settings → Secrets and variables → Actions
-# 2. Click "New repository secret" for each secret above
-
 name: Build
 
 on:
@@ -55,6 +39,28 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+
+      - name: Validate signing secrets
+        run: |
+          missing_secrets=()
+          if [[ -z "${{ secrets.KEYSTORE_BASE64 }}" ]]; then
+            missing_secrets+=("KEYSTORE_BASE64")
+          fi
+          if [[ -z "${{ secrets.KEYSTORE_PASSWORD }}" ]]; then
+            missing_secrets+=("KEYSTORE_PASSWORD")
+          fi
+          if [[ -z "${{ secrets.KEY_ALIAS }}" ]]; then
+            missing_secrets+=("KEY_ALIAS")
+          fi
+          if [[ -z "${{ secrets.KEY_PASSWORD }}" ]]; then
+            missing_secrets+=("KEY_PASSWORD")
+          fi
+          if [[ ${#missing_secrets[@]} -gt 0 ]]; then
+            echo "Error: Missing required secrets: ${missing_secrets[*]}"
+            echo "Please configure these in: Settings → Secrets and variables → Actions"
+            exit 1
+          fi
+          echo "All signing secrets are configured"
 
       - name: Calculate version
         id: version

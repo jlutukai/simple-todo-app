@@ -295,4 +295,4 @@ Custom `@Dispatcher` qualifier annotation for injecting specific coroutine dispa
 
 ## Download
 
-[Download the APK here](https://github.com/jlutukai/SimpleTodoApp/releases)
+[Download the APK here](https://github.com/jlutukai/simple-todo-app/releases)
