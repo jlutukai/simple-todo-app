@@ -21,10 +21,10 @@ val versionNameFromEnv: String = System.getenv("VERSION_NAME") ?: localVersionNa
 val versionCodeFromEnv: Int = System.getenv("VERSION_CODE")?.toIntOrNull() ?: localVersionCode
 
 // Release signing config from environment variables (set in CI)
-val keystoreFile: String? = System.getenv("KEYSTORE_FILE")?.takeIf { it.isNotBlank() }
-val keystorePassword: String? = System.getenv("KEYSTORE_PASSWORD")?.takeIf { it.isNotBlank() }
-val keyAlias: String? = System.getenv("KEY_ALIAS")?.takeIf { it.isNotBlank() }
-val keyPassword: String? = System.getenv("KEY_PASSWORD")?.takeIf { it.isNotBlank() }
+val releaseStoreFile: String? = System.getenv("KEYSTORE_FILE")?.takeIf { it.isNotBlank() }
+val releaseStorePassword: String? = System.getenv("KEYSTORE_PASSWORD")?.takeIf { it.isNotBlank() }
+val releaseKeyAlias: String? = System.getenv("KEY_ALIAS")?.takeIf { it.isNotBlank() }
+val releaseKeyPassword: String? = System.getenv("KEY_PASSWORD")?.takeIf { it.isNotBlank() }
 
 android {
     namespace = "com.lutukai.simpletodoapp"
@@ -41,12 +41,14 @@ android {
     }
 
     signingConfigs {
-        if (keystoreFile != null && keystorePassword != null && keyAlias != null && keyPassword != null) {
+        if (releaseStoreFile != null && releaseStorePassword != null && releaseKeyAlias != null &&
+            releaseKeyPassword != null
+        ) {
             create("release") {
-                storeFile = file(keystoreFile)
-                storePassword = keystorePassword
-                this.keyAlias = keyAlias
-                this.keyPassword = keyPassword
+                storeFile = file(releaseStoreFile)
+                storePassword = releaseStorePassword
+                this.keyAlias = releaseKeyAlias
+                this.keyPassword = releaseKeyPassword
             }
         }
     }
