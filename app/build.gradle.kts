@@ -41,7 +41,9 @@ android {
     }
 
     signingConfigs {
-        if (releaseStoreFile != null && releaseStorePassword != null && releaseKeyAlias != null &&
+        if (releaseStoreFile != null &&
+            releaseStorePassword != null &&
+            releaseKeyAlias != null &&
             releaseKeyPassword != null
         ) {
             create("release") {
